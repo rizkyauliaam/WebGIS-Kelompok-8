@@ -1,0 +1,1886 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebGIS - Analisis Perubahan Vegetasi Kabupaten Jember 2024–2025</title>
+
+    <!-- Google Fonts: Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <!-- Leaflet Fullscreen Plugin CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.fullscreen@1.0.2/dist/Control.FullScreen.css" />
+
+    <!-- Leaflet Geocoder Plugin CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+
+    <style>
+        /* ============================
+   CONFUSION MATRIX
+============================ */
+
+.confusion-cell{
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    min-height:100px;
+    padding:16px 10px;
+}
+
+.confusion-value{
+    font-size:30px;
+    font-weight:700;
+    line-height:1;
+    margin-bottom:8px;
+}
+
+.confusion-title{
+    font-size:14px;
+    font-weight:600;
+    color:#555;
+    line-height:1.3;
+    text-align:center;
+}
+
+.confusion-code{
+    font-size:13px;
+    color:#777;
+    font-weight:500;
+}
+
+.table thead th{
+    vertical-align:middle;
+    text-align:center;
+}
+
+.table tbody td{
+    vertical-align:middle;
+}
+        .glass-card table td:first-child{
+    width: 42%;
+    white-space: nowrap;
+    color: #6c757d;
+}
+
+.glass-card table td:last-child{
+    width: 58%;
+    text-align: right;
+    font-weight: 600;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+        :root {
+            --primary-green: #1b5e20;
+            --secondary-green: #2e7d32;
+            --light-green: #4caf50;
+            --accent-green-light: #e8f5e9;
+            --bg-light: #f4f6f9;
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --border-color: rgba(0, 0, 0, 0.08);
+
+            --veg-2024: #1b5e20;
+            --veg-2025: #81c784;
+            --gain-blue: #0d6efd;
+            --loss-red: #dc3545;
+            --boundary-charcoal: #495057;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-light);
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Gradient & Modern Header */
+        .bg-gradient-green {
+            background: linear-gradient(135deg, var(--primary-green) 0%, var(--secondary-green) 50%, var(--light-green) 100%);
+        }
+
+        /* Glassmorphism Header Tab Navbar */
+        .navbar-custom {
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        #tabNav .nav-link {
+            color: rgba(255, 255, 255, 0.85);
+            font-weight: 500;
+            border-radius: 30px;
+            padding: 8px 18px;
+            transition: all 0.25s ease;
+            border: 1px solid transparent;
+            font-size: 14px;
+        }
+
+        #tabNav .nav-link:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+        }
+
+        #tabNav .nav-link.active {
+            background-color: #fff;
+            color: var(--primary-green);
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+        }
+
+        /* Glassmorphism cards with smooth shadow & hover animations */
+        .glass-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
+            transition: transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        .glass-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+        }
+
+        .glass-card-header {
+            border-bottom: 1px solid var(--border-color);
+            background: transparent;
+            padding: 16px 20px;
+        }
+
+        /* Tab Content Styling */
+        .tab-content-panel {
+            display: none;
+        }
+
+        .tab-content-panel.active {
+            display: block;
+            animation: fadeIn 0.35s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Map styling & Layout */
+        .map-container-card {
+            position: relative;
+            overflow: hidden;
+            border-radius: 14px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
+        }
+
+        #map {
+            height: calc(100vh - 190px);
+            min-height: 520px;
+            background: #e9ecef;
+        }
+
+        /* Sidebar Panels Tab 1 */
+        .sidebar-control {
+            max-height: calc(100vh - 190px);
+            overflow-y: auto;
+        }
+
+        .layer-swatch-circle {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            display: inline-block;
+            flex-shrink: 0;
+            border: 1.5px solid rgba(0, 0, 0, 0.2);
+        }
+
+        /* Range Slider Styling */
+        .form-range::-webkit-slider-thumb {
+            background-color: var(--secondary-green);
+        }
+
+        .form-range::-moz-range-thumb {
+            background-color: var(--secondary-green);
+        }
+
+        .form-range::-ms-thumb {
+            background-color: var(--secondary-green);
+        }
+
+        /* Loading Spinner Screen */
+        .map-loading {
+            position: absolute;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: opacity 0.4s ease, visibility 0.4s ease;
+        }
+
+        .map-loading.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        /* Custom Leaflet Controls */
+        .leaflet-bar a {
+            background-color: #fff !important;
+            border-bottom: 1px solid #ccc !important;
+            color: #333 !important;
+            transition: background-color 0.2s;
+        }
+
+        .leaflet-bar a:hover {
+            background-color: #f4f4f4 !important;
+            color: var(--primary-green) !important;
+        }
+
+        .leaflet-coordinate-control {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(5px);
+            padding: 4px 8px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            font-size: 11px;
+            font-weight: 500;
+            color: #333;
+            margin: 10px !important;
+        }
+
+        .leaflet-home-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        /* Responsive Popups styling */
+        .custom-leaflet-popup .leaflet-popup-content-wrapper {
+            border-radius: 10px;
+            padding: 0;
+            overflow: hidden;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.15);
+            border: 1px solid var(--border-color);
+        }
+
+        .custom-leaflet-popup .leaflet-popup-content {
+            margin: 0;
+            width: 240px !important;
+        }
+
+        .custom-leaflet-popup .leaflet-popup-close-button {
+            color: white !important;
+            font-size: 18px !important;
+            padding: 8px 8px 0 0 !important;
+        }
+
+        /* Interactive Legend Styling */
+        .legend-item-clickable {
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            border-radius: 8px;
+            padding: 6px 8px;
+        }
+
+        .legend-item-clickable:hover {
+            background-color: var(--accent-green-light);
+            transform: translateX(3px);
+        }
+
+        /* Stats Badge styling */
+        .metric-icon-box {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        /* TAB 2: Process Timeline Styling */
+        .timeline-flow {
+            position: relative;
+            padding-left: 32px;
+            border-left: 3px solid var(--secondary-green);
+        }
+
+        .timeline-step {
+            position: relative;
+            margin-bottom: 28px;
+        }
+
+        .timeline-step::before {
+            content: '';
+            position: absolute;
+            left: -40px;
+            top: 4px;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--light-green);
+            border: 3px solid #fff;
+            box-shadow: 0 0 0 3px var(--secondary-green);
+            transition: all 0.2s ease;
+        }
+
+        .timeline-step:hover::before {
+            background: var(--primary-green);
+            transform: scale(1.25);
+        }
+
+        /* TAB 3: Metric Ring / Card */
+        .evaluation-card {
+            border-left: 5px solid var(--secondary-green);
+        }
+
+        .evaluation-card.warning-left {
+            border-left-color: #ffc107;
+        }
+
+        .evaluation-card.danger-left {
+            border-left-color: #dc3545;
+        }
+
+        /* Footer */
+        footer {
+            margin-top: auto;
+            border-top: 1px solid var(--border-color);
+            background-color: #fff;
+            font-size: 13px;
+        }
+
+        /* Responsive */
+        @media (max-width: 991.98px) {
+            #map {
+                height: 480px;
+            }
+
+            .sidebar-control {
+                max-height: none;
+                overflow-y: visible;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- STICKY NAVBAR -->
+    <nav class="navbar navbar-expand-lg sticky-top navbar-dark bg-gradient-green navbar-custom py-2 shadow-sm">
+        <div class="container-fluid px-lg-4">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="#">
+                <div class="bg-white rounded-circle p-2 d-flex align-items-center justify-content-center"
+                    style="width: 38px; height: 38px;">
+                    <i class="fas fa-leaf text-success fs-5"></i>
+                </div>
+                <div>
+                    <h1 class="h6 mb-0 text-white fw-bold tracking-tight" style="font-size: 15px; line-height: 1.1;">
+                        WEBGIS KELOMPOK 8</h1>
+                    <span class="text-white-50" style="font-size: 11px;">Analisis Perubahan Vegetasi Kabupaten Jember
+                        2024–2025</span>
+                </div>
+            </a>
+
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <i class="fas fa-bars text-white"></i>
+            </button>
+
+            <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+                <ul class="navbar-nav nav-pills gap-1 my-2 my-lg-0" id="tabNav">
+                    <li class="nav-item">
+                        <button class="nav-link active" data-tab="tab1"><i class="fas fa-map-marked-alt me-2"></i>Peta
+                            Hasil</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-tab="tab2"><i class="fas fa-project-diagram me-2"></i>Data &amp;
+                            Proses</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-tab="tab3"><i
+                                class="fas fa-square-poll-vertical me-2"></i>Evaluasi Model</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-tab="tab4"><i class="fas fa-chart-line me-2"></i>Insight
+                            Hasil</button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- MAIN CONTAINER -->
+    <main class="container-fluid p-3 p-lg-4 flex-grow-1">
+
+        <!-- LOCAL CORS NOTICE WARNING -->
+        <div class="alert alert-warning alert-dismissible fade show shadow-sm border-0 d-none" id="serverNotice"
+            role="alert" style="border-radius: 12px; background-color: #fff3cd; color: #856404;">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fas fa-exclamation-triangle fs-5 text-warning"></i>
+                <div>
+                    <strong>Perhatian!</strong> GeoJSON tidak dapat dimuat langsung via protokol <code>file://</code>
+                    karena pembatasan keamanan CORS browser.
+                    Jalankan server lokal, misalnya menggunakan python: <code>python -m http.server 8000</code> dari
+                    folder project, lalu buka di browser <code>http://localhost:8000</code>.
+                </div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
+        <!-- ==========================================
+             TAB 1: PETA HASIL
+             ========================================== -->
+        <div class="tab-content-panel active" id="tab1">
+            <div class="row g-3">
+
+                <!-- Left Control Sidebar -->
+                <div class="col-12 col-lg-3 order-2 order-lg-1">
+                    <div class="glass-card h-100 sidebar-control">
+                        <div class="glass-card-header">
+                            <h5 class="h6 mb-0 fw-bold text-success"><i class="fas fa-sliders me-2"></i>Layer Control
+                            </h5>
+                        </div>
+                        <div class="card-body p-3">
+                            <!-- Basemap Toggle Switch -->
+                            <div
+                                class="form-check form-switch p-2 mb-3 bg-light rounded-3 d-flex align-items-center justify-content-between">
+                                <label class="form-check-label fw-600 text-dark mb-0 ps-1" for="layer-basemap"
+                                    style="font-size: 13px;">
+                                    <i class="fas fa-globe text-primary me-2"></i>Basemap OpenStreetMap
+                                </label>
+                                <input class="form-check-input" type="checkbox" role="switch" id="layer-basemap" checked
+                                    style="cursor: pointer; width: 38px; height: 18px;">
+                            </div>
+
+                            <!-- Leaflet Layer Toggles -->
+                            <div class="mb-4">
+                                <h6 class="text-uppercase tracking-wider text-muted font-weight-bold"
+                                    style="font-size: 11px;">Layer Vektor GeoJSON</h6>
+
+                                <!-- Jember Boundary Switch -->
+                                <div
+                                    class="form-check form-switch py-2 border-bottom border-light d-flex align-items-center justify-content-between">
+                                    <label class="form-check-label d-flex align-items-center gap-2 mb-0"
+                                        for="layer-boundary" style="font-size: 13px; cursor: pointer;">
+                                        <span
+                                            style="border: 2px dashed var(--boundary-charcoal); background: transparent; width: 14px; height: 14px; display: inline-block;"></span>
+                                        <span>Batas Kab. Jember</span>
+                                    </label>
+                                    <input class="form-check-input" type="checkbox" role="switch" id="layer-boundary"
+                                        checked style="cursor: pointer;">
+                                </div>
+
+                                <!-- Target 2024 Switch -->
+                                <div
+                                    class="form-check form-switch py-2 border-bottom border-light d-flex align-items-center justify-content-between">
+                                    <label class="form-check-label d-flex align-items-center gap-2 mb-0"
+                                        for="layer-target2024" style="font-size: 13px; cursor: pointer;">
+                                        <span class="layer-swatch-circle"
+                                            style="background-color: var(--veg-2024);"></span>
+                                        <span>Target Vegetasi 2024</span>
+                                    </label>
+                                    <input class="form-check-input" type="checkbox" role="switch" id="layer-target2024"
+                                        style="cursor: pointer;">
+                                </div>
+
+                                <!-- Target 2025 Switch -->
+                                <div
+                                    class="form-check form-switch py-2 border-bottom border-light d-flex align-items-center justify-content-between">
+                                    <label class="form-check-label d-flex align-items-center gap-2 mb-0"
+                                        for="layer-target2025" style="font-size: 13px; cursor: pointer;">
+                                        <span class="layer-swatch-circle"
+                                            style="background-color: var(--veg-2025);"></span>
+                                        <span>Target Vegetasi 2025</span>
+                                    </label>
+                                    <input class="form-check-input" type="checkbox" role="switch" id="layer-target2025"
+                                        style="cursor: pointer;">
+                                </div>
+
+                                <!-- Gain Switch -->
+                                <div
+                                    class="form-check form-switch py-2 border-bottom border-light d-flex align-items-center justify-content-between">
+                                    <label class="form-check-label d-flex align-items-center gap-2 mb-0"
+                                        for="layer-gain" style="font-size: 13px; cursor: pointer;">
+                                        <span class="layer-swatch-circle"
+                                            style="background-color: var(--gain-blue);"></span>
+                                        <span>Gain (Bertambah)</span>
+                                    </label>
+                                    <input class="form-check-input" type="checkbox" role="switch" id="layer-gain"
+                                        checked style="cursor: pointer;">
+                                </div>
+
+                                <!-- Loss Switch -->
+                                <div
+                                    class="form-check form-switch py-2 d-flex align-items-center justify-content-between">
+                                    <label class="form-check-label d-flex align-items-center gap-2 mb-0"
+                                        for="layer-loss" style="font-size: 13px; cursor: pointer;">
+                                        <span class="layer-swatch-circle"
+                                            style="background-color: var(--loss-red);"></span>
+                                        <span>Loss (Berkurang)</span>
+                                    </label>
+                                    <input class="form-check-input" type="checkbox" role="switch" id="layer-loss"
+                                        checked style="cursor: pointer;">
+                                </div>
+                            </div>
+
+                            <!-- Opacity Slider -->
+                            <div class="p-3 bg-light rounded-3 mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="text-muted" style="font-size: 12px; font-weight: 500;">Transparansi
+                                        Layer</span>
+                                    <span class="badge bg-success" id="opacityValue" style="font-size: 11px;">70%</span>
+                                </div>
+                                <input type="range" class="form-range" id="opacitySlider" min="0" max="100" value="70"
+                                    style="cursor: pointer;">
+                            </div>
+
+                            <!-- Interactive Legend -->
+                            <div class="mt-3">
+                                <h6 class="text-uppercase tracking-wider text-muted font-weight-bold mb-2"
+                                    style="font-size: 11px;">Legenda Interaktif (Click to toggle)</h6>
+                                <div class="d-flex flex-column gap-1">
+                                    <div class="legend-item-clickable d-flex align-items-center gap-2"
+                                        onclick="toggleLayerFromLegend('boundary')" style="cursor: pointer;">
+                                        <span
+                                            style="border: 2px dashed var(--boundary-charcoal); background: transparent; width: 16px; height: 16px; display: inline-block;"></span>
+                                        <span class="text-dark" style="font-size: 12.5px;">Batas Kab. Jember</span>
+                                    </div>
+                                    <div class="legend-item-clickable d-flex align-items-center gap-2"
+                                        onclick="toggleLayerFromLegend('target2024')" style="cursor: pointer;">
+                                        <span class="layer-swatch-circle"
+                                            style="background-color: var(--veg-2024); width: 16px; height: 16px;"></span>
+                                        <span class="text-dark" style="font-size: 12.5px;">Vegetasi 2024 (Hijau
+                                            Tua)</span>
+                                    </div>
+                                    <div class="legend-item-clickable d-flex align-items-center gap-2"
+                                        onclick="toggleLayerFromLegend('target2025')" style="cursor: pointer;">
+                                        <span class="layer-swatch-circle"
+                                            style="background-color: var(--veg-2025); width: 16px; height: 16px;"></span>
+                                        <span class="text-dark" style="font-size: 12.5px;">Vegetasi 2025 (Hijau
+                                            Muda)</span>
+                                    </div>
+                                    <div class="legend-item-clickable d-flex align-items-center gap-2"
+                                        onclick="toggleLayerFromLegend('gain')" style="cursor: pointer;">
+                                        <span class="layer-swatch-circle"
+                                            style="background-color: var(--gain-blue); width: 16px; height: 16px;"></span>
+                                        <span class="text-dark" style="font-size: 12.5px;">Gain (Biru)</span>
+                                    </div>
+                                    <div class="legend-item-clickable d-flex align-items-center gap-2"
+                                        onclick="toggleLayerFromLegend('loss')" style="cursor: pointer;">
+                                        <span class="layer-swatch-circle"
+                                            style="background-color: var(--loss-red); width: 16px; height: 16px;"></span>
+                                        <span class="text-dark" style="font-size: 12.5px;">Loss (Merah)</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Map Center Panel -->
+                <div class="col-12 col-lg-6 order-1 order-lg-2">
+                    <div class="map-container-card">
+                        <div id="map"></div>
+
+                        <!-- Map Loading Overlay -->
+                        <div class="map-loading" id="mapLoading">
+                            <div class="spinner-border text-success mb-3" role="status"
+                                style="width: 3rem; height: 3rem;">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <h6 class="text-dark fw-bold mb-1">Memproses Layer GeoJSON</h6>
+                            <p class="text-muted mb-3" style="font-size: 12px;">Mengunduh dan memetakan data spasial...
+                            </p>
+                            <div class="progress w-50" style="height: 8px; border-radius: 4px;">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated bg-success"
+                                    id="progressFill" role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <div id="loadingText" class="mt-2 text-muted fw-500" style="font-size: 12px;">0 / 5 layer
+                                selesai</div>
+                        </div>
+                    </div>
+                </div>
+
+               <!-- Right Statistics Sidebar -->
+                <div class="col-12 col-lg-3 order-3">
+                    <div class="glass-card h-100 sidebar-control">
+                        <div class="glass-card-header">
+                            <h5 class="h6 mb-0 fw-bold text-success"><i class="fas fa-chart-pie me-2"></i>Ringkasan
+                                Hasil</h5>
+                        </div>
+                        <div class="card-body p-3">
+                            <div class="d-flex flex-column gap-2 mb-3">
+
+                                <!-- Stat Card: Veg 2024 -->
+                                <div
+                                    class="d-flex align-items-center gap-3 p-2 bg-light rounded-3 border-start border-4 border-success">
+                                    <div class="metric-icon-box bg-success text-white">
+                                        <i class="fas fa-tree"></i>
+                                    </div>
+                                    <div>
+                                        <span class="text-muted d-block" style="font-size: 11px;">Luas Vegetasi
+                                            2024</span>
+                                        <strong class="text-dark" style="font-size: 14px;">207.235,79 ha</strong>
+                                    </div>
+                                </div>
+
+                                <!-- Stat Card: Veg 2025 -->
+                                <div class="d-flex align-items-center gap-3 p-2 bg-light rounded-3 border-start border-4"
+                                    style="border-left-color: var(--veg-2025) !important;">
+                                    <div class="metric-icon-box text-white" style="background-color: var(--veg-2025);">
+                                        <i class="fas fa-leaf"></i>
+                                    </div>
+                                    <div>
+                                        <span class="text-muted d-block" style="font-size: 11px;">Luas Vegetasi
+                                            2025</span>
+                                        <strong class="text-dark" style="font-size: 14px;">241.333,38 ha</strong>
+                                    </div>
+                                </div>
+
+                                <!-- Stat Card: Gain -->
+                                <div
+                                    class="d-flex align-items-center gap-3 p-2 bg-light rounded-3 border-start border-4 border-primary">
+                                    <div class="metric-icon-box bg-primary text-white">
+                                        <i class="fas fa-circle-arrow-up"></i>
+                                    </div>
+                                    <div>
+                                        <span class="text-muted d-block" style="font-size: 11px;">Gain
+                                            (Bertambah)</span>
+                                        <strong class="text-dark" style="font-size: 14px;">47.830,92 ha</strong>
+                                    </div>
+                                </div>
+
+                                <!-- Stat Card: Loss -->
+                                <div
+                                    class="d-flex align-items-center gap-3 p-2 bg-light rounded-3 border-start border-4 border-danger">
+                                    <div class="metric-icon-box bg-danger text-white">
+                                        <i class="fas fa-circle-arrow-down"></i>
+                                    </div>
+                                    <div>
+                                        <span class="text-muted d-block" style="font-size: 11px;">Loss
+                                            (Berkurang)</span>
+                                        <strong class="text-dark" style="font-size: 14px;">13.733,33 ha</strong>
+                                    </div>
+                                </div>
+
+                                <!-- Stat Card: Net Change -->
+                                <div
+                                    class="d-flex align-items-center gap-3 p-2 bg-warning-subtle rounded-3 border-start border-4 border-warning">
+                                    <div class="metric-icon-box bg-warning text-dark">
+                                        <i class="fas fa-chart-line"></i>
+                                    </div>
+                                    <div>
+                                        <span class="text-muted-dark d-block" style="font-size: 11px;">Net Change</span>
+                                        <strong class="text-dark" style="font-size: 13.5px;">+34.097,59 ha (+16,45%)</strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h6 class="text-uppercase tracking-wider text-muted font-weight-bold mb-2"
+                                style="font-size: 11px;">Insight Cepat</h6>
+                            <ul class="list-unstyled d-flex flex-column gap-2 mb-0"
+                                style="font-size: 12px; line-height: 1.4;">
+                                <li class="d-flex gap-2">
+                                    <i class="fas fa-check-circle text-success mt-0.5"></i>
+                                    <span>Pertambahan vegetasi bersih 34.097,59 ha (16,45%) terjadi dari tahun 2024 ke
+                                        2025.</span>
+                                </li>
+                                <li class="d-flex gap-2">
+                                    <i class="fas fa-check-circle text-success mt-0.5"></i>
+                                    <span>Area Gain (47.830,92 ha) jauh lebih dominan dibandingkan area Loss
+                                        (13.733,33 ha).</span>
+                                </li>
+                                <li class="d-flex gap-2">
+                                    <i class="fas fa-check-circle text-success mt-0.5"></i>
+                                    <span>Vegetasi yang tetap (stable) mencapai 193.502,46 ha, menandakan stabilitas
+                                        tutupan vegetasi.</span>
+                                </li>
+                                <li class="d-flex gap-2">
+                                    <i class="fas fa-check-circle text-success mt-0.5"></i>
+                                    <span>Model Random Forest dilatih dengan 215 data training dan diuji dengan 85
+                                        data testing.</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==========================================
+             TAB 2: DATA & PROSES
+             ========================================== -->
+        <div class="tab-content-panel" id="tab2">
+            <div class="row g-4 justify-content-center">
+
+                <!-- GEE Metadata Cards -->
+                <div class="col-12 col-xl-10">
+                    <div class="row g-3">
+
+                        <!-- Card 1: Citra Satelit -->
+                        <div class="col-12 col-md-4">
+                            <div class="glass-card h-100">
+                                <div class="glass-card-header bg-success-subtle py-3 text-center rounded-top">
+                                    <i class="fas fa-satellite text-success fs-3 mb-2"></i>
+                                    <h5 class="h6 fw-bold mb-0 text-success-emphasis">Sumber Citra Satelit</h5>
+                                </div>
+                                <div class="card-body p-3">
+                                    <table class="table table-sm table-borderless mb-0" style="font-size: 13px;">
+                                        <tr>
+                                            <td class="text-muted">Platform:</td>
+                                            <td class="fw-semibold text-end">Sentinel-2 SR</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Harmonized ID:</td>
+                                            <td class="fw-semibold text-end" style="font-size:12px;">COPERNICUS/S2_SR_HARMONIZED</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Resolusi Spasial:</td>
+                                            <td class="fw-semibold text-end">10 meter</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Composite Type:</td>
+                                            <td class="fw-semibold text-end">Median Composite</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Awan Masking:</td>
+                                            <td class="fw-semibold text-end">QA60 Filter</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card 2: Band & Indeks -->
+                        <div class="col-12 col-md-4">
+                            <div class="glass-card h-100">
+                                <div class="glass-card-header bg-success-subtle py-3 text-center rounded-top">
+                                    <i class="fas fa-bars-staggered text-success fs-3 mb-2"></i>
+                                    <h5 class="h6 fw-bold mb-0 text-success-emphasis">Fitur &amp; Indeks Spektral</h5>
+                                </div>
+                                <div class="card-body p-3">
+                                    <table class="table table-sm table-borderless mb-0" style="font-size: 13px;">
+                                        <tr>
+                                            <td class="text-muted">Reflektansi Band:</td>
+                                            <td class="fw-semibold text-end">B2, B3, B4, B8, B11, B12</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Indeks Hijau (NDVI):</td>
+                                            <td class="fw-semibold text-end">Veg. Vigor</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Indeks Air (NDWI):</td>
+                                            <td class="fw-semibold text-end">Kandungan Air</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Indeks Bangunan (NDBI):</td>
+                                            <td class="fw-semibold text-end">Lahan Terbuka</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">EVI &amp; SAVI:</td>
+                                            <td class="fw-semibold text-end">Kanopi &amp; Koreksi Tanah</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card 3: Model Parameters -->
+                        <div class="col-12 col-md-4">
+                            <div class="glass-card h-100">
+                                <div class="glass-card-header bg-success-subtle py-3 text-center rounded-top">
+                                    <i class="fas fa-brain text-success fs-3 mb-2"></i>
+                                    <h5 class="h6 fw-bold mb-0 text-success-emphasis">Parameter Random Forest</h5>
+                                </div>
+                                <div class="card-body p-3">
+                                    <table class="table table-sm table-borderless mb-0" style="font-size: 13px;">
+                                        <tr>
+                                            <td class="text-muted">Algoritma:</td>
+                                            <td class="fw-semibold text-end">Random Forest</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Jumlah Trees:</td>
+                                            <td class="fw-semibold text-end">100 Trees</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Ground Truth:</td>
+                                            <td class="fw-semibold text-end">300 Titik (Target/Non)</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Data Split:</td>
+                                            <td class="fw-semibold text-end">70% Train | 30% Test</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Random Seed:</td>
+                                            <td class="fw-semibold text-end">42</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- SVG / HTML Flowchart Workflow -->
+                    <div class="glass-card mt-4">
+                        <div class="glass-card-header">
+                            <h5 class="h6 mb-0 fw-bold text-success"><i class="fas fa-route me-2"></i>Alur Proses &amp;
+                                Metodologi Kerja</h5>
+                        </div>
+                        <div class="card-body p-4">
+
+                            <div class="timeline-flow">
+
+                                <div class="timeline-step">
+                                    <h6 class="fw-bold text-success mb-1">1. Sentinel-2 Citra Satelit</h6>
+                                    <p class="text-muted mb-0" style="font-size:13.5px;">Memanggil koleksi data Google
+                                        Earth Engine <code>COPERNICUS/S2_SR_HARMONIZED</code> untuk wilayah Kabupaten
+                                        Jember selama rentang waktu tahun 2024 dan 2025.</p>
+                                </div>
+
+                                <div class="timeline-step">
+                                    <h6 class="fw-bold text-success mb-1">2. Cloud Masking (Penyaringan Awan)</h6>
+                                    <p class="text-muted mb-0" style="font-size:13.5px;">Menggunakan bitmask band QA60
+                                        untuk mendeteksi awan dan sisa gangguan cuaca, menyaring piksel berawan dengan
+                                        threshold probabilitas 20% agar diperoleh piksel bersih.</p>
+                                </div>
+
+                                <div class="timeline-step">
+                                    <h6 class="fw-bold text-success mb-1">3. Median Composite</h6>
+                                    <p class="text-muted mb-0" style="font-size:13.5px;">Mereduksi deret waktu citra
+                                        tahunan dengan komposit nilai median. Metode ini mengeliminasi outlier ekstrem
+                                        dan kekosongan data spasial akibat awan.</p>
+                                </div>
+
+                                <div class="timeline-step">
+                                    <h6 class="fw-bold text-success mb-1">4. Feature Extraction (Bands &amp; Indeks)
+                                    </h6>
+                                    <p class="text-muted mb-0" style="font-size:13.5px;">Mengekstrak 11 fitur penting: 6
+                                        band spektral asli (B2-B4, B8, B11-B12) serta 5 indeks transformasi vegetasi,
+                                        tanah, dan air (NDVI, NDWI, NDBI, EVI, SAVI) untuk memperkaya model klasifikasi.
+                                    </p>
+                                </div>
+
+                                <div class="timeline-step">
+                                    <h6 class="fw-bold text-success mb-1">5. Ground Truth Sampling</h6>
+                                    <p class="text-muted mb-0" style="font-size:13.5px;">Mengumpulkan 300 titik Ground
+                                        Truth di lapangan melalui GEE dan Google Earth Pro, membagi wilayah survei ke
+                                        dalam kelas Target (Vegetasi) dan Non-Target (Non-vegetasi).</p>
+                                </div>
+
+                                <div class="timeline-step">
+                                    <h6 class="fw-bold text-success mb-1">6. Training Random Forest Model</h6>
+                                    <p class="text-muted mb-0" style="font-size:13.5px;">Membagi sampel data secara acak
+                                        (Random Seed 42) dengan proporsi 70% data latih (training) dan melatih
+                                        penggolong Random Forest Classifier dengan struktur 100 decision trees.</p>
+                                </div>
+
+                                <div class="timeline-step">
+                                    <h6 class="fw-bold text-success mb-1">7. Evaluasi Akurasi</h6>
+                                    <p class="text-muted mb-0" style="font-size:13.5px;">Menggunakan sisa 30% data uji
+                                        (testing) untuk menghitung confusion matrix dan metrik kuantitatif model:
+                                        Accuracy, Precision, Recall, F1-Score, serta nilai koefisien Kappa.</p>
+                                </div>
+
+                                <div class="timeline-step">
+                                    <h6 class="fw-bold text-success mb-1">8. Klasifikasi Tutupan Lahan</h6>
+                                    <p class="text-muted mb-0" style="font-size:13.5px;">Menerapkan model Random Forest
+                                        yang sudah terlatih untuk memetakan tutupan vegetasi dan non-vegetasi di seluruh
+                                        wilayah Kabupaten Jember pada tahun 2024 dan 2025.</p>
+                                </div>
+
+                                <div class="timeline-step" style="margin-bottom:0;">
+                                    <h6 class="fw-bold text-success mb-1">9. Change Detection (Deteksi Perubahan)</h6>
+                                    <p class="text-muted mb-0" style="font-size:13.5px;">Melakukan analisis tumpang
+                                        susun (spatial overlay) matrik perbedaan citra hasil klasifikasi 2024 dan 2025
+                                        untuk mengisolasi kluster vegetasi yang bertambah (Gain) dan berkurang (Loss).
+                                    </p>
+                                </div>
+
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ==========================================
+             TAB 3: EVALUASI MODEL
+             ========================================== -->
+        <div class="tab-content-panel" id="tab3">
+            <div class="row g-4 justify-content-center">
+
+                <div class="col-12 col-xl-10">
+
+                    <!-- Metrics Cards Grid -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-6 col-md-4 col-lg">
+                            <div class="glass-card evaluation-card p-3 h-100 text-center">
+                                <span class="text-muted d-block mb-1"
+                                    style="font-size: 11px; font-weight: 500;">Training Data</span>
+                                <h4 class="fw-bold text-success mb-0">215 <span
+                                        style="font-size:12px; font-weight:normal;" class="text-muted">titik</span></h4>
+                                <span class="badge bg-success-subtle text-success mt-2" style="font-size: 10px;">70%
+                                    Proporsi</span>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4 col-lg">
+                            <div class="glass-card evaluation-card p-3 h-100 text-center">
+                                <span class="text-muted d-block mb-1" style="font-size: 11px; font-weight: 500;">Testing
+                                    Data</span>
+                                <h4 class="fw-bold text-success mb-0">85 <span
+                                        style="font-size:12px; font-weight:normal;" class="text-muted">titik</span></h4>
+                                <span class="badge bg-success-subtle text-success mt-2" style="font-size: 10px;">30%
+                                    Proporsi</span>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4 col-lg">
+                            <div class="glass-card evaluation-card p-3 h-100 text-center">
+                                <span class="text-muted d-block mb-1"
+                                    style="font-size: 11px; font-weight: 500;">Accuracy</span>
+                                <h4 class="fw-bold text-success mb-0">96,5%</h4>
+                                <div class="progress mt-2" style="height: 5px;">
+                                    <div class="progress-bar bg-success" style="width: 96.5%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4 col-lg">
+                            <div class="glass-card evaluation-card p-3 h-100 text-center">
+                                <span class="text-muted d-block mb-1"
+                                    style="font-size: 11px; font-weight: 500;">Precision</span>
+                                <h4 class="fw-bold text-success mb-0">95,7%</h4>
+                                <div class="progress mt-2" style="height: 5px;">
+                                    <div class="progress-bar bg-success" style="width: 95.7%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4 col-lg">
+                            <div class="glass-card evaluation-card p-3 h-100 text-center">
+                                <span class="text-muted d-block mb-1"
+                                    style="font-size: 11px; font-weight: 500;">Recall</span>
+                                <h4 class="fw-bold text-success mb-0">97,8%</h4>
+                                <div class="progress mt-2" style="height: 5px;">
+                                    <div class="progress-bar bg-success" style="width: 97.8%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4 col-lg">
+                            <div class="glass-card evaluation-card p-3 h-100 text-center">
+                                <span class="text-muted d-block mb-1" style="font-size: 11px; font-weight: 500;">F1
+                                    Score</span>
+                                <h4 class="fw-bold text-success mb-0">96,7%</h4>
+                                <div class="progress mt-2" style="height: 5px;">
+                                    <div class="progress-bar bg-success" style="width: 96.7%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-4 col-lg">
+                            <div class="glass-card evaluation-card p-3 h-100 text-center">
+                                <span class="text-muted d-block mb-1" style="font-size: 11px; font-weight: 500;">Kappa
+                                    Coefficient</span>
+                                <h4 class="fw-bold text-success mb-0">0,93</h4>
+                                <span class="badge bg-success-subtle text-success mt-2" style="font-size: 10px;">Sangat
+                                    Kuat</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-4">
+
+                        <!-- Left Panel: Confusion Matrix -->
+                        <div class="col-12 col-lg-6">
+                            <div class="glass-card h-100">
+                                <div class="glass-card-header">
+                                    <h5 class="h6 mb-0 fw-bold text-success"><i
+                                            class="fas fa-border-all me-2"></i>Matriks Kebingungan (Confusion Matrix)
+                                    </h5>
+                                </div>
+                                <div class="card-body p-3">
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered text-center align-middle shadow-sm mb-2"
+                                            style="font-size: 13.5px;">
+                                            <thead class="table-dark">
+                                                <tr>
+                                                    <th rowspan="2" class="align-middle border-0"
+                                                        style="background-color: var(--primary-green);">Aktual</th>
+                                                    <th colspan="2" class="py-2 border-0"
+                                                        style="background-color: var(--secondary-green);">Prediksi Kelas
+                                                        Model</th>
+                                                </tr>
+                                                <tr>
+                                                    <th class="py-2">Pred. Non-vegetasi</th>
+                                                    <th class="py-2">Pred. Vegetasi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td class="fw-bold bg-light">Non-vegetasi</td>
+                                                    <td class="bg-success-subtle fw-bold text-success p-3">
+                                                        37
+                                                        <small class="d-block text-muted fw-normal mt-1"
+                                                            style="font-size: 10px;">True Negative (TN)</small>
+                                                    </td>
+                                                    <td class="bg-danger-subtle fw-bold text-danger p-3">
+                                                        2
+                                                        <small class="d-block text-muted fw-normal mt-1"
+                                                            style="font-size: 10px;">False Positive (FP)</small>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="fw-bold bg-light">Vegetasi</td>
+                                                    <td class="bg-danger-subtle fw-bold text-danger p-3">
+                                                        1
+                                                        <small class="d-block text-muted fw-normal mt-1"
+                                                            style="font-size: 10px;">False Negative (FN)</small>
+                                                    </td>
+                                                    <td class="bg-success-subtle fw-bold text-success p-3">
+                                                        45
+                                                        <small class="d-block text-muted fw-normal mt-1"
+                                                            style="font-size: 10px;">True Positive (TP)</small>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="text-center text-muted" style="font-size: 11px;">
+                                        Total data pengujian model (testing set): 85 titik sampel valid.
+                                    </div>
+
+                                    <!-- Interpretasi Confusion Matrix -->
+                                    <div class="p-3 bg-light rounded-3 mt-3 border-start border-4 border-success">
+                                        <h6 class="fw-bold text-dark mb-1" style="font-size: 12.5px;"><i
+                                                class="fas fa-circle-info text-success me-2"></i>Penjelasan Temuan
+                                            Matrix</h6>
+                                        <ul class="list-unstyled mb-0 d-flex flex-column gap-1"
+                                            style="font-size: 12px; line-height: 1.4;">
+                                            <li><span class="fw-bold text-success">TP (45):</span> 45 area vegetasi
+                                                berhasil dideteksi dengan benar sebagai vegetasi.</li>
+                                            <li><span class="fw-bold text-success">TN (37):</span> 37 area non-vegetasi
+                                                dideteksi dengan benar sebagai non-vegetasi.</li>
+                                            <li><span class="fw-bold text-danger">FP (2):</span> Hanya 2 piksel
+                                                non-vegetasi yang dideteksi keliru sebagai vegetasi.</li>
+                                            <li><span class="fw-bold text-danger">FN (1):</span> Hanya 1 piksel vegetasi
+                                                yang terlewat dan diklasifikasikan non-vegetasi.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Panel: Interpretasi APRF & Keterbatasan -->
+                        <div class="col-12 col-lg-6">
+                            <div class="glass-card h-100">
+                                <div class="glass-card-header">
+                                    <h5 class="h6 mb-0 fw-bold text-success"><i
+                                            class="fas fa-clipboard-list me-2"></i>Evaluasi &amp; Kepercayaan Model</h5>
+                                </div>
+                                <div class="card-body p-3 d-flex flex-column gap-3">
+
+                                    <!-- Kepercayaan Model -->
+                                    <div class="p-3 bg-success-subtle rounded-3 border-start border-4 border-success">
+                                        <h6 class="fw-bold text-success-emphasis mb-1" style="font-size: 13px;">
+                                            <i class="fas fa-circle-check text-success me-2"></i>Tingkat Kepercayaan
+                                            Model (Sangat Tinggi)
+                                        </h6>
+                                        <p class="mb-0 text-success-emphasis"
+                                            style="font-size: 12px; line-height: 1.45;">
+                                            Akurasi model klasifikasi Random Forest berada pada angka
+                                            <strong>96,5%</strong> didukung koefisien <strong>Kappa 0,93</strong>. Hal
+                                            ini membuktikan bahwa pembagian kluster, ekstraksi fitur spektral, dan
+                                            klasifikasi tutupan vegetasi memiliki tingkat korelasi sangat tinggi dengan
+                                            kondisi faktual di lapangan.
+                                        </p>
+                                    </div>
+
+                                    <!-- Interpretasi APRF -->
+                                    <div class="p-3 bg-light rounded-3 border-start border-4 border-primary">
+                                        <h6 class="fw-bold text-dark mb-1" style="font-size: 13px;">
+                                            <i class="fas fa-spell-check text-primary me-2"></i>Interpretasi APRF
+                                        </h6>
+                                        <p class="mb-0 text-muted" style="font-size: 12px; line-height: 1.45;">
+                                            Nilai <strong>Precision (95,7%)</strong> yang tinggi menekan risiko adanya
+                                            vegetasi palsu (overestimation). Sementara itu, <strong>Recall
+                                                (97,8%)</strong> yang luar biasa menjamin hampir seluruh area hijau riil
+                                            di Kabupaten Jember terdeteksi tanpa ada yang tertinggal dalam klasifikasi
+                                            model.
+                                        </p>
+                                    </div>
+
+                                    <!-- Keterbatasan Model -->
+                                    <div class="p-3 bg-warning-subtle rounded-3 border-start border-4 border-warning">
+                                        <h6 class="fw-bold text-warning-emphasis mb-1" style="font-size: 13px;">
+                                            <i class="fas fa-triangle-exclamation text-warning me-2"></i>Keterbatasan
+                                            Analisis Model
+                                        </h6>
+                                        <p class="mb-0 text-warning-emphasis"
+                                            style="font-size: 12px; line-height: 1.45;">
+                                            Meskipun akurasi model memuaskan, keterbatasan resolusi spasial satelit
+                                            Sentinel-2 (10m) berpotensi memicu efek piksel campuran (mixed pixels) di
+                                            area batas lahan pertanian. Selain itu, kesamaan spektral antara tanaman
+                                            musiman dengan semak basah dapat menimbulkan distorsi minor pada
+                                            klasifikasi.
+                                        </p>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ==========================================
+             TAB 4: INSIGHT HASIL
+             ========================================== -->
+        <div class="tab-content-panel" id="tab4">
+            <div class="row g-4 justify-content-center">
+
+                <div class="col-12 col-xl-10">
+                    <div class="row g-4">
+
+                        <!-- Left Panel: Summary Statistics & Charts -->
+                        <div class="col-12 col-lg-5">
+                            <div class="glass-card mb-4">
+                                <div class="glass-card-header">
+                                    <h5 class="h6 mb-0 fw-bold text-success"><i
+                                            class="fas fa-square-poll-horizontal me-2"></i>Statistik Tutupan &amp;
+                                        Perubahan</h5>
+                                </div>
+                                <div class="card-body p-3">
+                                    <div class="row g-2 mb-4">
+                                        <div class="col-6">
+                                            <div class="p-2 border rounded text-center">
+                                                <span class="text-muted d-block" style="font-size: 10px;">Vegetasi
+                                                    2024</span>
+                                                <span class="fw-bold text-success" style="font-size: 15px;">207.235,79
+                                                    ha</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="p-2 border rounded text-center">
+                                                <span class="text-muted d-block" style="font-size: 10px;">Vegetasi
+                                                    2025</span>
+                                                <span class="fw-bold text-success" style="font-size: 15px;">241.333,38
+                                                    ha</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="p-2 border rounded text-center">
+                                                <span class="text-muted d-block" style="font-size: 10px;">Gain</span>
+                                                <span class="fw-bold text-primary" style="font-size: 13px;">+47.830,92
+                                                    ha</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="p-2 border rounded text-center">
+                                                <span class="text-muted d-block" style="font-size: 10px;">Loss</span>
+                                                <span class="fw-bold text-danger" style="font-size: 13px;">-13.733,33
+                                                    ha</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="p-2 border rounded text-center">
+                                                <span class="text-muted d-block" style="font-size: 10px;">Stable</span>
+                                                <span class="fw-bold text-secondary" style="font-size: 13px;">193.502,46
+                                                    ha</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Charts Container -->
+                                    <div class="mb-4">
+                                        <h6 class="fw-bold text-center mb-2" style="font-size: 12.5px;">Komparasi Tren
+                                            Vegetasi (2024 vs 2025)</h6>
+                                        <div style="height: 180px; position: relative;">
+                                            <canvas id="vegChart"></canvas>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <h6 class="fw-bold text-center mb-2" style="font-size: 12.5px;">Proporsi
+                                            Transisi Tutupan Lahan</h6>
+                                        <div style="height: 180px; position: relative;">
+                                            <canvas id="changeChart"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Panel: Narrative & Interpretations -->
+                        <div class="col-12 col-lg-7">
+                            <div class="glass-card">
+                                <div class="glass-card-header">
+                                    <h5 class="h6 mb-0 fw-bold text-success"><i
+                                            class="fas fa-file-invoice me-2"></i>Executive Insights &amp; Analisis
+                                        Spasial</h5>
+                                </div>
+                                <div class="card-body p-3 d-flex flex-column gap-3">
+
+                                    <!-- Lokasi Perubahan Terbesar -->
+                                    <div>
+                                        <h6 class="fw-bold text-dark mb-1" style="font-size: 13.5px;"><i
+                                                class="fas fa-map-location-dot text-success me-2"></i>Lokasi Perubahan
+                                            Terbesar</h6>
+                                        <p class="text-muted mb-0" style="font-size: 12.5px; line-height: 1.45;">
+                                            Berdasarkan tumpang susun spasial, luas vegetasi Kabupaten Jember tercatat
+                                            <strong>mengalami pertambahan bersih sebesar 34.097,59 ha
+                                                (16,45%)</strong> antara tahun 2024 ke 2025. Area <strong>Gain
+                                                (47.830,92 ha)</strong> jauh lebih dominan dibandingkan area
+                                            <strong>Loss (13.733,33 ha)</strong>, menunjukkan tren pertambahan tutupan
+                                            vegetasi secara umum di wilayah kajian, dengan konsentrasi perubahan
+                                            terbesar teridentifikasi pada area-area yang sebelumnya berupa lahan
+                                            terbuka atau lahan pertanian musiman di sekitar Kabupaten Jember.
+                                        </p>
+                                    </div>
+
+                                    <!-- Pola Distribusi Perubahan -->
+                                    <div>
+                                        <h6 class="fw-bold text-dark mb-1" style="font-size: 13.5px;"><i
+                                                class="fas fa-arrows-split-up-and-left text-success me-2"></i>Pola
+                                            Distribusi Perubahan</h6>
+                                        <p class="text-muted mb-0" style="font-size: 12.5px; line-height: 1.45;">
+                                            Vegetasi yang tetap (stable) mendominasi sebagian besar wilayah dengan luas
+                                            193.502,46 ha, menandakan stabilitas tutupan vegetasi di sebagian besar
+                                            Kabupaten Jember. Area gain tersebar lebih luas dibanding area loss,
+                                            mengindikasikan proses pertumbuhan/pemulihan vegetasi berlangsung lebih
+                                            masif dibanding proses degradasi pada periode 2024–2025.
+                                        </p>
+                                    </div>
+
+                                    <!-- Interpretasi Penyebab Perubahan -->
+                                    <div class="p-3 bg-light rounded-3">
+                                        <h6 class="fw-bold text-dark mb-1" style="font-size: 13.5px;"><i
+                                                class="fas fa-magnifying-glass-chart text-success me-2"></i>Interpretasi
+                                            Penyebab Perubahan (Hipotetis)</h6>
+                                        <p class="text-muted mb-0"
+                                            style="font-size: 12.5px; line-height: 1.45; font-style: italic;">
+                                            Pertambahan vegetasi yang signifikan (16,45%) diduga berkaitan dengan
+                                            siklus tanam pertanian/perkebunan, program penghijauan, atau pemulihan
+                                            kanopi pasca musim kemarau. Sementara loss yang relatif lebih kecil
+                                            (13.733,33 ha) kemungkinan berasosiasi dengan alih fungsi lahan lokal atau
+                                            aktivitas panen musiman pada area tertentu.
+                                        </p>
+                                    </div>
+
+                                    <!-- Potensi Penggunaan Hasil -->
+                                    <div>
+                                        <h6 class="fw-bold text-dark mb-1" style="font-size: 13.5px;"><i
+                                                class="fas fa-bullseye text-success me-2"></i>Potensi Penggunaan Hasil
+                                            Penelitian</h6>
+                                        <p class="text-muted mb-0" style="font-size: 12.5px; line-height: 1.45;">
+                                            Peta perubahan spasial ini dapat diaplikasikan oleh Dinas Lingkungan Hidup
+                                            (DLH) Kabupaten Jember untuk memantau tren pemulihan vegetasi, mengevaluasi
+                                            efektivitas program penghijauan, serta mengidentifikasi area yang masih
+                                            memerlukan intervensi konservasi lebih lanjut.
+                                        </p>
+                                    </div>
+
+                                    <!-- Rekomendasi Penelitian Selanjutnya -->
+                                    <div class="row g-2">
+                                        <div class="col-12 col-md-6">
+                                            <div class="p-2 border rounded h-100 bg-white">
+                                                <h6 class="fw-bold text-success mb-1" style="font-size: 12px;"><i
+                                                        class="fas fa-lightbulb me-1"></i>Rekomendasi Riset Lanjutan
+                                                </h6>
+                                                <p class="text-muted mb-0" style="font-size: 11px;">
+                                                    Disarankan mengintegrasikan data curah hujan bulanan (CHIRPS) dan
+                                                    jenis tanah lokal untuk mengkorelasikan tren pertambahan vegetasi
+                                                    dengan pola musim tanam secara lebih komprehensif.
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div class="col-12 col-md-6">
+                                            <div class="p-2 border rounded h-100 bg-white">
+                                                <h6 class="fw-bold text-danger mb-1" style="font-size: 12px;"><i
+                                                        class="fas fa-triangle-exclamation me-1"></i>Keterbatasan
+                                                    Penelitian</h6>
+                                                <p class="text-muted mb-0" style="font-size: 11px;">
+                                                    Penelitian ini terbatas pada analisis temporal dua tahun
+                                                    berturut-turut tanpa mempertimbangkan siklus fenologi jangka panjang
+                                                    tanaman perkebunan musiman.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="py-3 mt-5">
+        <div class="container text-center text-muted">
+            <p class="mb-1 fw-semibold">WebGIS Kelompok 8 — Analisis Perubahan Vegetasi Jember</p>
+            <p class="mb-0 font-size-xs" style="font-size: 11.5px;">UAS Kapita Selekta &amp; Maha Data Spasial |
+                Kabupaten Jember &copy; 2026. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Leaflet Fullscreen Plugin JS -->
+    <script src="https://unpkg.com/leaflet.fullscreen@1.0.2/dist/Control.FullScreen.umd.js"></script>
+
+    <!-- Leaflet Geocoder Plugin JS -->
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+
+    <!-- Chart.js -->
+
+    <!-- WEBGIS LOGIC -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <script>
+        // ===== CONSTANTS & STATS =====
+        const STATS = {
+            veg2024: 207235.79,
+            veg2025: 241333.38,
+            gain: 47830.92,
+            loss: 13733.33,
+            stable: 193502.46,
+            netChange: 34097.59,
+            netPct: 16.45
+        };
+
+        const LAYER_CONFIG = {
+            boundary: {
+                url: 'data/Jember_Batas.geojson',
+                color: '#495057',
+                label: 'Batas Kabupaten Jember',
+                checkboxId: 'layer-boundary',
+                defaultOn: true
+            },
+            target2024: {
+                url: 'data/Jember_Target_2024_Asset_NoFilter.geojson',
+                color: '#1b5e20',
+                label: 'Target Vegetasi 2024',
+                checkboxId: 'layer-target2024',
+                defaultOn: false
+            },
+            target2025: {
+                url: 'data/Jember_Target_2025_Asset_NoFilter.geojson',
+                color: '#81c784',
+                label: 'Target Vegetasi 2025',
+                checkboxId: 'layer-target2025',
+                defaultOn: false
+            },
+            gain: {
+                url: 'data/Jember_Gain_Asset_NoFilter.geojson',
+                color: '#0d6efd',
+                label: 'Gain (Bertambah)',
+                checkboxId: 'layer-gain',
+                defaultOn: true
+            },
+            loss: {
+                url: 'data/Jember_Loss_Asset_NoFilter.geojson',
+                color: '#dc3545',
+                label: 'Loss (Berkurang)',
+                checkboxId: 'layer-loss',
+                defaultOn: true
+            }
+        };
+
+        let fillOpacity = 0.7;
+        const geojsonLayers = {};
+        let layersLoaded = 0;
+        const totalLayers = Object.keys(LAYER_CONFIG).length;
+        const allBounds = [];
+
+        // ===== TAB NAVIGATION =====
+        document.querySelectorAll('#tabNav button').forEach(btn => {
+            btn.addEventListener('click', function () {
+                document.querySelectorAll('#tabNav button').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content-panel').forEach(c => c.classList.remove('active'));
+                this.classList.add('active');
+                document.getElementById(this.dataset.tab).classList.add('active');
+                if (this.dataset.tab === 'tab1') {
+                    setTimeout(() => map.invalidateSize(), 250);
+                }
+            });
+        });
+
+        // ===== AREA CALCULATORS =====
+        function polygonAreaHa(latlngs) {
+            if (latlngs.length < 3) return 0;
+            const R = 6378137;
+            let area = 0;
+            for (let i = 0; i < latlngs.length; i++) {
+                const p1 = latlngs[i];
+                const p2 = latlngs[(i + 1) % latlngs.length];
+                area += (p2.lng - p1.lng) * Math.PI / 180 *
+                    (2 + Math.sin(p1.lat * Math.PI / 180) + Math.sin(p2.lat * Math.PI / 180));
+            }
+            area = Math.abs(area * R * R / 2);
+            return area / 10000;
+        }
+
+        function formatHa(ha) {
+            return ha.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ha';
+        }
+
+        function formatPct(pct) {
+            return pct.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
+        }
+
+        function buildPopup(key, config, areaHa) {
+            let objek = config.label;
+            let kategori = '';
+            let periode = '';
+            let persentaseStr = '';
+
+            if (key === 'boundary') {
+                kategori = 'Batas Administrasi';
+                periode = '-';
+                persentaseStr = '-';
+            } else if (key === 'target2024') {
+                kategori = 'Vegetasi';
+                periode = '2024';
+                persentaseStr = '-';
+            } else if (key === 'target2025') {
+                kategori = 'Vegetasi';
+                periode = '2025';
+                persentaseStr = '-';
+            } else if (key === 'gain') {
+                kategori = 'Gain (Bertambah)';
+                periode = '2024–2025';
+                const pct = (areaHa / STATS.veg2024) * 100;
+                persentaseStr = `+${formatPct(pct)} (dari veg 2024)`;
+            } else if (key === 'loss') {
+                kategori = 'Loss (Berkurang)';
+                periode = '2024–2025';
+                const pct = (areaHa / STATS.veg2024) * 100;
+                persentaseStr = `-${formatPct(pct)} (dari veg 2024)`;
+            }
+
+            return `
+            <div class="custom-popup-card">
+                <div class="bg-gradient-green text-white p-2 rounded-top">
+                    <h6 class="mb-0 text-white font-weight-bold" style="font-size:12.5px;"><i class="fas fa-map-marker-alt me-1"></i> Kabupaten Jember</h6>
+                </div>
+                <div class="p-2" style="font-size:12px;">
+                    <table class="table table-sm table-borderless mb-0">
+                      <tbody>
+    <tr>
+        <td class="fw-bold bg-light align-middle">Non-vegetasi</td>
+
+        <td class="bg-success-subtle p-0">
+            <div class="confusion-cell">
+                <div class="confusion-value text-success">37</div>
+                <div class="confusion-title">True Negative</div>
+                <div class="confusion-code">(TN)</div>
+            </div>
+        </td>
+
+        <td class="bg-danger-subtle p-0">
+            <div class="confusion-cell">
+                <div class="confusion-value text-danger">2</div>
+                <div class="confusion-title">False Positive</div>
+                <div class="confusion-code">(FP)</div>
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td class="fw-bold bg-light align-middle">Vegetasi</td>
+
+        <td class="bg-danger-subtle p-0">
+            <div class="confusion-cell">
+                <div class="confusion-value text-danger">1</div>
+                <div class="confusion-title">False Negative</div>
+                <div class="confusion-code">(FN)</div>
+            </div>
+        </td>
+
+        <td class="bg-success-subtle p-0">
+            <div class="confusion-cell">
+                <div class="confusion-value text-success">45</div>
+                <div class="confusion-title">True Positive</div>
+                <div class="confusion-code">(TP)</div>
+            </div>
+        </td>
+    </tr>
+</tbody>
+                    </table>
+                </div>
+            </div>
+            `;
+        }
+
+        // ===== MAP INITIALIZATION =====
+        const canvasRenderer = L.canvas({ padding: 0.5 });
+        const map = L.map('map', {
+            center: [-8.17, 113.70],
+            zoom: 10,
+            preferCanvas: true,
+            zoomControl: false // disabled standard zoom control to position it top-left with custom style
+        });
+
+        // Add standard zoom control with custom position
+        L.control.zoom({ position: 'topleft' }).addTo(map);
+
+        // OSM Basemap Layer
+        const basemap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a>',
+            maxZoom: 19
+        }).addTo(map);
+
+        // Leaflet Scale Control
+        L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(map);
+
+        // Leaflet Fullscreen Control
+        if (L.control.fullScreen) {
+            L.control.fullScreen({
+                position: 'topleft',
+                title: 'Fullscreen',
+                titleCancel: 'Exit Fullscreen'
+            }).addTo(map);
+        }
+
+        // Leaflet Geocoder Search Control
+        L.Control.geocoder({ position: 'topleft', defaultMarkGeocode: true, placeholder: 'Cari lokasi...' }).addTo(map);
+
+        // Custom Home Button Control
+        L.Control.HomeButton = L.Control.extend({
+            onAdd: function (map) {
+                const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+                const button = L.DomUtil.create('a', 'leaflet-home-button', container);
+                button.innerHTML = '<i class="fas fa-home"></i>';
+                button.href = '#';
+                button.title = 'Reset View';
+
+                L.DomEvent.on(button, 'click', function (e) {
+                    L.DomEvent.stopPropagation(e);
+                    L.DomEvent.preventDefault(e);
+                    if (allBounds.length > 0) {
+                        const combined = allBounds.reduce((acc, b) => acc.extend(b));
+                        map.fitBounds(combined, { padding: [20, 20] });
+                    } else {
+                        map.setView([-8.17, 113.70], 10);
+                    }
+                });
+
+                return container;
+            }
+        });
+        new L.Control.HomeButton({ position: 'topleft' }).addTo(map);
+
+        // Custom Mouse Coordinate Control
+        L.Control.CoordinateControl = L.Control.extend({
+            onAdd: function (map) {
+                const container = L.DomUtil.create('div', 'leaflet-coordinate-control');
+                container.innerHTML = `<i class="fas fa-mouse-pointer me-1"></i> Lat: - | Lng: -`;
+                map.on('mousemove', function (e) {
+                    container.innerHTML = `<i class="fas fa-mouse-pointer me-1"></i> Lat: ${e.latlng.lat.toFixed(5)} | Lng: ${e.latlng.lng.toFixed(5)}`;
+                });
+                return container;
+            }
+        });
+        new L.Control.CoordinateControl({ position: 'bottomright' }).addTo(map);
+
+        // Style helper
+        function getStyle(key, color) {
+            if (key === 'boundary') {
+                return {
+                    color: '#495057',
+                    weight: 2,
+                    fillOpacity: 0,
+                    dashArray: '6, 6',
+                    renderer: canvasRenderer
+                };
+            }
+            return {
+                color: color,
+                weight: 0.6,
+                fillColor: color,
+                fillOpacity: fillOpacity,
+                renderer: canvasRenderer
+            };
+        }
+
+        function updateLayerOpacity() {
+            Object.entries(geojsonLayers).forEach(([key, layerGroup]) => {
+                if (key !== 'boundary') {
+                    layerGroup.eachLayer(layer => {
+                        layer.setStyle({ fillOpacity: fillOpacity });
+                    });
+                }
+            });
+        }
+
+        function toggleLayer(key, visible) {
+            const layer = geojsonLayers[key];
+            if (!layer) return;
+            if (visible) {
+                if (!map.hasLayer(layer)) map.addLayer(layer);
+            } else {
+                if (map.hasLayer(layer)) map.removeLayer(layer);
+            }
+        }
+
+        // Custom function to toggle layer from clicking Legend Items
+        function toggleLayerFromLegend(key) {
+            const config = LAYER_CONFIG[key];
+            if (!config) return;
+            const checkbox = document.getElementById(config.checkboxId);
+            if (checkbox) {
+                checkbox.checked = !checkbox.checked;
+                toggleLayer(key, checkbox.checked);
+            }
+        }
+
+        // ===== LOAD GEOJSON SEQUENTIALLY =====
+        function loadGeoJSON(key, config) {
+            return fetch(config.url)
+                .then(res => {
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    return res.json();
+                })
+                .then(data => {
+                    const layerGroup = L.geoJSON(data, {
+                        style: () => getStyle(key, config.color),
+                        onEachFeature: function (feature, layer) {
+                            let areaHa = 0;
+                            if (layer.getLatLngs) {
+                                try {
+                                    const latlngs = layer.getLatLngs();
+                                    const ring = Array.isArray(latlngs[0]) ? latlngs[0] : latlngs;
+                                    if (Array.isArray(ring[0])) {
+                                        ring.forEach(r => { areaHa += polygonAreaHa(r); });
+                                    } else {
+                                        areaHa = polygonAreaHa(ring);
+                                    }
+                                } catch (e) { }
+                            }
+                            if (areaHa <= 0 && feature.properties && feature.properties.count) {
+                                areaHa = feature.properties.count * 0.01;
+                            }
+
+                            layer.bindPopup(buildPopup(key, config, areaHa), {
+                                maxWidth: 280,
+                                className: 'custom-leaflet-popup'
+                            });
+                        }
+                    });
+
+                    geojsonLayers[key] = layerGroup;
+
+                    if (config.defaultOn) {
+                        layerGroup.addTo(map);
+                    }
+
+                    try {
+                        const b = layerGroup.getBounds();
+                        if (b.isValid()) allBounds.push(b);
+                    } catch (e) { /* ignore */ }
+
+                    layersLoaded++;
+                    document.getElementById('progressFill').style.width =
+                        (layersLoaded / totalLayers * 100) + '%';
+                    document.getElementById('loadingText').textContent =
+                        layersLoaded + ' / ' + totalLayers + ' layer selesai';
+
+                    if (layersLoaded === totalLayers) {
+                        document.getElementById('mapLoading').classList.add('hidden');
+                        if (allBounds.length > 0) {
+                            const combined = allBounds.reduce((acc, b) => acc.extend(b));
+                            map.fitBounds(combined, { padding: [20, 20] });
+                        }
+                    }
+                })
+                .catch(err => {
+                    console.error('Gagal memuat layer: ' + config.url, err);
+                    layersLoaded++;
+                    if (layersLoaded === totalLayers) {
+                        document.getElementById('mapLoading').classList.add('hidden');
+                    }
+                    if (location.protocol === 'file:') {
+                        document.getElementById('serverNotice').classList.remove('d-none');
+                    }
+                });
+        }
+
+        // Self-invoking function to load layers sequentially to prevent thread-blocking
+        (async function loadAllLayers() {
+            for (const [key, config] of Object.entries(LAYER_CONFIG)) {
+                await loadGeoJSON(key, config);
+            }
+        })();
+
+        // ===== EVENT HANDLERS =====
+        // Basemap checkbox toggle
+        document.getElementById('layer-basemap').addEventListener('change', function () {
+            if (this.checked) basemap.addTo(map);
+            else map.removeLayer(basemap);
+        });
+
+        // Layer config checkbox triggers
+        Object.entries(LAYER_CONFIG).forEach(([key, config]) => {
+            document.getElementById(config.checkboxId).addEventListener('change', function () {
+                toggleLayer(key, this.checked);
+            });
+        });
+
+        // Opacity slider handler
+        const opacitySlider = document.getElementById('opacitySlider');
+        const opacityValue = document.getElementById('opacityValue');
+        opacitySlider.addEventListener('input', function () {
+            fillOpacity = this.value / 100;
+            opacityValue.textContent = this.value + '%';
+            updateLayerOpacity();
+        });
+
+        // Check local protocol for CORS warning
+        if (location.protocol === 'file:') {
+            document.getElementById('serverNotice').classList.remove('d-none');
+        }
+
+        // ===== CHART.JS INITIALIZATION (TAB 4) =====
+        document.addEventListener('DOMContentLoaded', function () {
+            // Veg Area Comparison (Bar Chart)
+            const ctxVeg = document.getElementById('vegChart').getContext('2d');
+            new Chart(ctxVeg, {
+                type: 'bar',
+                data: {
+                    labels: ['Tahun 2024', 'Tahun 2025'],
+                    datasets: [{
+                        label: 'Luas Vegetasi (ha)',
+                        data: [207235.79, 241333.38],
+                        backgroundColor: ['#1b5e20', '#81c784'],
+                        borderColor: ['#0f3b14', '#5da360'],
+                        borderWidth: 1.5,
+                        borderRadius: 8,
+                        barPercentage: 0.55
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    return `Luas: ${context.parsed.y.toLocaleString('id-ID')} ha`;
+                                }
+                            }
+                        },
+                        datalabels: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { drawBorder: false, color: '#f0f0f0' },
+                            ticks: { font: { family: 'Poppins', size: 10 } }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { font: { family: 'Poppins', size: 11, weight: '500' } }
+                        }
+                    }
+                }
+            });
+
+            // Transition Proportions (Doughnut Chart)
+            const ctxChange = document.getElementById('changeChart').getContext('2d');
+            new Chart(ctxChange, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Stable Veg', 'Gain', 'Loss'],
+                    datasets: [{
+                        data: [193502.46, 47830.92, 13733.33],
+                        backgroundColor: ['#2e7d32', '#0d6efd', '#dc3545'],
+                        borderWidth: 2,
+                        hoverOffset: 4
+                    }]
+                },
+                plugins: [ChartDataLabels],
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                font: { family: 'Poppins', size: 11 },
+                                boxWidth: 12,
+                                padding: 12
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    const value = context.parsed;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const pct = ((value / total) * 100).toFixed(2);
+                                    return ` ${context.label}: ${value.toLocaleString('id-ID')} ha (${pct}%)`;
+                                }
+                            }
+                        },
+                        datalabels: {
+                            color: '#fff',
+                            font: {
+                                family: 'Poppins',
+                                size: 12,
+                                weight: '700'
+                            },
+                            textStrokeColor: 'rgba(0,0,0,0.25)',
+                            textStrokeWidth: 2,
+                            formatter: function (value, context) {
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const pct = (value / total) * 100;
+                                return pct.toFixed(1).replace('.', ',') + '%';
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
