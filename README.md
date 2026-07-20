@@ -22,7 +22,7 @@ Anggota Kelompok 8
 
 1. Yudha Pandu Widyanto - 12320020752
 2. Willy Jonatan Sibagariang - 12320020203
-3. Rizky Aulia Maharani - 12320020724
+3. Rizky Aulia Maharani - 1232002072
 4. Cassandra Etania - 12320020655
 5. Atih Yulianti - 1232002001
 
