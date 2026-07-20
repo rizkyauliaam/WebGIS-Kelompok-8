@@ -31,12 +31,12 @@ Cara Membuka WebGIS
 Buka link: https://web-gis-kelompok-8.vercel.app
 
 WebGIS terdiri dari 4 tab:
-1. Peta Hasil — peta interaktif berisi basemap, batas Kabupaten Jember,
+1. Peta Hasil : peta interaktif berisi basemap, batas Kabupaten Jember,
 vegetasi 2024, vegetasi 2025, gain, loss, legenda, layer control, dan
 popup informasi.
-2. Data & Proses — sumber data, metode preprocessing, band/indeks,
+2. Data & Proses : sumber data, metode preprocessing, band/indeks,
 ground truth, dan parameter Random Forest yang digunakan.
-3. Evaluasi Model — confusion matrix, Accuracy, Precision, Recall,
+3. Evaluasi Model : confusion matrix, Accuracy, Precision, Recall,
 F1-score, dan interpretasinya.
-4. Insight Hasil — ringkasan luas dan perubahan vegetasi, lokasi
+4. Insight Hasil : ringkasan luas dan perubahan vegetasi, lokasi
 perubahan terbesar, serta rekomendasi lanjutan.
