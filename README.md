@@ -1,6 +1,7 @@
 **WebGIS Perubahan Vegetasi (NDVI) Kabupaten Jember 2024-2025**
 
-**Proyek UAS Mata Kuliah Kapita Selekta dan Maha Data — Kelompok 8
+**Proyek UAS Mata Kuliah Kapita Selekta dan Maha Data
+Kelompok 8
 Program Studi Sistem Informasi, Universitas Bakrie**
 
 Informasi Proyek
