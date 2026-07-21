@@ -1,4 +1,4 @@
-**WebGIS Perubahan Vegetasi (NDVI) Kabupaten Jember 2024-2025**
+# 🌿 Klasifikasi dan Deteksi Perubahan Vegetasi Kabupaten Jember (2024–2025)
 
 **Proyek UAS Mata Kuliah Kapita Selekta dan Maha Data
 Kelompok 8
