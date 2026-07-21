@@ -36,8 +36,8 @@ Kabupaten Jember dipilih sebagai wilayah studi karena memiliki karakteristik yan
 | Yudha Pandu Widyanto | 1232002075 | Data Collector & GEE Engineer |
 | Willy Jonatan Sibagariang | 1232002020 | GEE Engineer |
 | Rizky Aulia Maharani | 1232002072 | WebGIS Developer & Repository Manager |
-| Exel Goklas Rivollet Sihombing | 1232002063 | Repository Manager |
-| Cassandra Etania | 1232002065 | Technical Writer |
+| Cassandra Etania | 1232002065 | Repository Manager & Technical Writer |
+| Exel Goklas Rivollet Sihombing | 1232002063 | Technical Writer |
 | Atih Yulianti | 1232002001 | Technical Writer |
 
 ## Data dan Pra-pemrosesan
