@@ -89,15 +89,13 @@ Konfigurasi model dirancang untuk menghasilkan klasifikasi vegetasi yang optimal
 
 ## Hasil Analisis Perubahan Vegetasi
 
-| Komponen | Luas (ha) | Persentase |
-|----------|----------:|-----------:|
-| Luas Kabupaten Jember | 332,036.98 | 100.00% |
-| Vegetasi 2024 | 207,235.79 | 62.41% |
-| Vegetasi 2025 | 241,333.38 | 72.68% |
-| Gain (Bertambah) | 47,830.92 | 14.41% |
-| Loss (Berkurang) | 13,733.33 | 4.14% |
-| Stable (Tetap Vegetasi) | 193,502.46 | 58.28% |
-| Net Change | +34,097.59 | +16.45% |
+| Komponen | Luas (ha) |
+|----------|----------:|
+| Vegetasi 2024 | 207,235.79 (62,41% luas kota)|
+| Vegetasi 2025 | 241,333.38 (72,68% luas kota)|
+| Gain | 47,830.92 |
+| Loss | 13,733.33 |
+| Net Change | +34,097.59 (+16.45%)|
 
 Hasil klasifikasi menggunakan algoritma **Random Forest** menunjukkan performa yang sangat baik dengan **Accuracy 96.47%**, **Precision 95.74%**, **Recall 97.83%**, dan **F1-Score 96.77%**. Analisis menunjukkan bahwa tutupan vegetasi di Kabupaten Jember meningkat dari **62.41%** pada tahun 2024 menjadi **72.68%** pada tahun 2025, dengan **penambahan bersih vegetasi sebesar 34,097.59 ha (+16.45%)**.
 
