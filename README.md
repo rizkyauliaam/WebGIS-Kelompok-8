@@ -25,7 +25,7 @@ Anggota Kelompok 8
 3. Rizky Aulia Maharani - 1232002072
 4. Cassandra Etania - 12320020655
 5. Atih Yulianti - 1232002001
-6. Exel Goklas Rivollet Sihombing 1232002063
+6. Exel Goklas Rivollet Sihombing - 1232002063
 
 Link WebGIS: https://web-gis-kelompok-8-kab-jember.vercel.app/
 
