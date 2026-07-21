@@ -38,6 +38,33 @@ Repositori ini berisi source code, data spasial, hasil analisis, serta aplikasi 
 | Cassandra Etania | 1232002065 | Technical Writer |
 | Atih Yulianti | 1232002001 | Technical Writer |
 
+# ⚙️ Metodologi
+
+```text
+Sentinel-2
+      │
+      ▼
+Preprocessing
+      │
+      ▼
+Perhitungan NDVI
+      │
+      ▼
+Ground Truth
+      │
+      ▼
+Random Forest
+      │
+      ▼
+Evaluasi APRF
+      │
+      ▼
+Analisis Gain • Loss • Stable
+      │
+      ▼
+WebGIS Interaktif
+```
+
 Link WebGIS: https://web-gis-kelompok-8-kab-jember.vercel.app/
 
 Cara Membuka WebGIS
