@@ -17,12 +17,12 @@ Repositori ini berisi source code, data spasial, hasil analisis, serta aplikasi 
 | Informasi | Keterangan |
 |-----------|------------|
 | **Wilayah Studi** | Kabupaten Jember, Jawa Timur, Indonesia |
-| **Objek Analisis** | Vegetasi |
+| **Objek Analisis** | Tutupan Vegetasi |
 | **Periode** | 2024–2025 |
-| **Data Satelit** | Sentinel-2 |
-| **Indeks Vegetasi** | NDVI |
+| **Data Satelit** | Sentinel-2 Surface Reflectance Harmonized |
+| **Fitur Analisis** | 6 Band Spektral + NDVI, NDWI, NDBI, EVI, SAVI |
 | **Metode Klasifikasi** | Random Forest |
-| **Evaluasi Model** | Accuracy, Precision, Recall, F1-Score (APRF) |
+| **Evaluasi Model** | Confusion Matrix, Accuracy, Precision, Recall, F1-Score, Kappa Coefficient |
 | **Output** | WebGIS Interaktif |
 
 ---
