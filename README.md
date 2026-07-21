@@ -25,6 +25,8 @@ Repositori ini berisi source code, data spasial, hasil analisis, serta aplikasi 
 | **Evaluasi Model** | Confusion Matrix, Accuracy, Precision, Recall, F1-Score, Kappa Coefficient |
 | **Output** | WebGIS Interaktif |
 
+Kabupaten Jember dipilih sebagai wilayah studi karena memiliki karakteristik yang sesuai untuk analisis perubahan tutupan vegetasi. Sebagai salah satu daerah dengan sektor pertanian dan perkebunan yang dominan di Jawa Timur, kondisi vegetasi di Kabupaten Jember mengalami perubahan yang dinamis dari waktu ke waktu. Selain itu, wilayah ini memiliki batas administrasi yang jelas serta ketersediaan citra Sentinel-2 yang memadai, sehingga mendukung proses analisis menggunakan Google Earth Engine dan algoritma Random Forest.
+
 ---
 
 # 👥 Tim Pengembang
