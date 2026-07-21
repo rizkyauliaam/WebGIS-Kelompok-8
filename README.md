@@ -38,6 +38,20 @@ Repositori ini berisi source code, data spasial, hasil analisis, serta aplikasi 
 | Cassandra Etania | 1232002065 | Technical Writer |
 | Atih Yulianti | 1232002001 | Technical Writer |
 
+## 🛰️ Data dan Pra-pemrosesan
+
+| Parameter | Konfigurasi |
+|-----------|-------------|
+| Dataset | Sentinel-2 Surface Reflectance Harmonized |
+| Wilayah | Kabupaten Jember, Jawa Timur |
+| Periode | 2024 dan 2025 |
+| Filter Awan | CLOUDY_PIXEL_PERCENTAGE < 20% |
+| Cloud Masking | QA60 |
+| Metode Komposit | Median Composite |
+| Resolusi | 10 meter |
+| Band | B2, B3, B4, B8, B11, B12 |
+| Indeks | NDVI, NDWI, NDBI, EVI, SAVI |
+
 # ⚙️ Metodologi
 
 ```text
