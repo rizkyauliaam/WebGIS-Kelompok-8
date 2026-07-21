@@ -71,6 +71,8 @@ Alur: Sentinel-2 → Cloud Masking (QA60) → Median Composite → Feature Extra
 | Data Training | 215 titik |
 | Data Testing | 85 titik |
 
+Konfigurasi model dirancang untuk menghasilkan klasifikasi vegetasi yang optimal dengan memanfaatkan 11 fitur (6 band spektral dan 5 indeks vegetasi). Data ground truth dibagi menggunakan rasio 70:30, kemudian model Random Forest dilatih menggunakan 100 decision trees sebelum dilakukan evaluasi performa.
+
 ---
 
 ## 📊 Hasil
