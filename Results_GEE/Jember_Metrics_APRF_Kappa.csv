@@ -1,0 +1,6 @@
+system:index,Interpretasi,Metric,Value,.geo
+0,Ketepatan total klasifikasi,Accuracy,0.9647058823529412,"{""type"":""MultiPoint"",""coordinates"":[]}"
+1,Ketepatan prediksi kelas Target,Precision,0.9574468085106383,"{""type"":""MultiPoint"",""coordinates"":[]}"
+2,Kemampuan menemukan kelas Target,Recall,0.9782608695652174,"{""type"":""MultiPoint"",""coordinates"":[]}"
+3,Harmonisasi Precision & Recall,F1-Score,0.967741935483871,"{""type"":""MultiPoint"",""coordinates"":[]}"
+4,Almost perfect agreement,Kappa,0.9287908405473332,"{""type"":""MultiPoint"",""coordinates"":[]}"

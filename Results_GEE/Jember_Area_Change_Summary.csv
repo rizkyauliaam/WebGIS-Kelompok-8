@@ -1,0 +1,8 @@
+system:index,Kategori,Luas_ha,.geo
+0,Vegetasi 2024,207235.78922641723,"{""type"":""MultiPoint"",""coordinates"":[]}"
+1,Vegetasi 2025,241333.3768647582,"{""type"":""MultiPoint"",""coordinates"":[]}"
+2,Gain (Bertambah),47830.92083421915,"{""type"":""MultiPoint"",""coordinates"":[]}"
+3,Loss (Berkurang),13733.333195892585,"{""type"":""MultiPoint"",""coordinates"":[]}"
+4,Stable Vegetasi,193502.45603053833,"{""type"":""MultiPoint"",""coordinates"":[]}"
+5,Perubahan Bersih,34097.58763834098,"{""type"":""MultiPoint"",""coordinates"":[]}"
+6,Persentase Perubahan,16.45352270745444,"{""type"":""MultiPoint"",""coordinates"":[]}"

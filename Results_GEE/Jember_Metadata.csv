@@ -1,0 +1,11 @@
+system:index,Nilai,Parameter,.geo
+0,Random Forest (smileRandomForest),Metode Klasifikasi,"{""type"":""MultiPoint"",""coordinates"":[]}"
+1,100,Jumlah Trees,"{""type"":""MultiPoint"",""coordinates"":[]}"
+2,42,Seed Split,"{""type"":""MultiPoint"",""coordinates"":[]}"
+3,300,Total Ground Truth,"{""type"":""MultiPoint"",""coordinates"":[]}"
+4,215,Total Training,"{""type"":""MultiPoint"",""coordinates"":[]}"
+5,85,Total Testing,"{""type"":""MultiPoint"",""coordinates"":[]}"
+6,30 meter,Scale Vektorisasi,"{""type"":""MultiPoint"",""coordinates"":[]}"
+7,Tanpa Filter (semua poligon ikut),Filter Vektorisasi,"{""type"":""MultiPoint"",""coordinates"":[]}"
+8,Kabupaten Jember,Lokasi Studi,"{""type"":""MultiPoint"",""coordinates"":[]}"
+9,2024-2025,Periode,"{""type"":""MultiPoint"",""coordinates"":[]}"

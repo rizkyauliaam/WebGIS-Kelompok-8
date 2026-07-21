@@ -1,0 +1,5 @@
+system:index,Kategori,Keterangan,Nilai,.geo
+0,True Negative (TN),Model benar memprediksi Non-Target,37,"{""type"":""MultiPoint"",""coordinates"":[]}"
+1,False Positive (FP),Model salah memprediksi Target,2,"{""type"":""MultiPoint"",""coordinates"":[]}"
+2,False Negative (FN),Model gagal menemukan Target,1,"{""type"":""MultiPoint"",""coordinates"":[]}"
+3,True Positive (TP),Model benar memprediksi Target,45,"{""type"":""MultiPoint"",""coordinates"":[]}"
