@@ -27,10 +27,10 @@ Anggota Kelompok 8
 5. Atih Yulianti - 1232002001
 6. Exel Goklas Rivollet Sihombing 1232002063
 
-Link WebGIS: https://web-gis-jember-kelompok-8.vercel.app/
+Link WebGIS: https://web-gis-kelompok-8-kab-jember.vercel.app/
 
 Cara Membuka WebGIS
-Buka link: https://web-gis-jember-kelompok-8.vercel.app/
+Buka link: https://web-gis-kelompok-8-kab-jember.vercel.app/
 
 WebGIS terdiri dari 4 tab:
 1. Peta Hasil : peta interaktif berisi basemap, batas Kabupaten Jember,
