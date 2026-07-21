@@ -1,6 +1,6 @@
 ## Download Dataset
 
-> **Dataset tidak disimpan di GitHub karena ukurannya melebihi batas penyimpanan GitHub.**
+> **Beberapa Dataset tidak disimpan di GitHub karena ukurannya melebihi batas penyimpanan GitHub.**
 
 Seluruh dataset dapat diunduh melalui Google Drive:
 
