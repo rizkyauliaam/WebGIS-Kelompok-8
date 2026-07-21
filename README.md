@@ -20,7 +20,7 @@ Repositori ini berisi source code, data spasial, hasil analisis, serta aplikasi 
 | **Objek Analisis** | Tutupan Vegetasi |
 | **Periode** | 2024–2025 |
 | **Data Satelit** | Sentinel-2 Surface Reflectance Harmonized |
-| **Fitur Analisis** | 6 Band Spektral + NDVI, NDWI, NDBI, EVI, SAVI |
+| **Fitur Analisis** | 6 Band Spektral + NDVI (yang paling ditonjolkan), NDWI, NDBI, EVI, SAVI |
 | **Metode Klasifikasi** | Random Forest |
 | **Evaluasi Model** | Confusion Matrix, Accuracy, Precision, Recall, F1-Score, Kappa Coefficient |
 | **Output** | WebGIS Interaktif |
