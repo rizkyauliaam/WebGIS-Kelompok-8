@@ -94,11 +94,7 @@ Alur: Sentinel-2 → Cloud Masking (QA60) → Median Composite → Feature Extra
 | Stable (Tetap Vegetasi) | 193,502.46 | 58.28% |
 | Net Change | +34,097.59 | +16.45% |
 
-Hasil analisis menunjukkan bahwa tutupan vegetasi di Kabupaten Jember mengalami peningkatan pada periode 2024–2025. Luas area **gain** lebih besar dibandingkan **loss**, sehingga terjadi penambahan bersih tutupan vegetasi sebesar **34,097.59 hektar**. Model Random Forest juga menunjukkan performa yang sangat baik dengan **Accuracy 96.47%** dan **Kappa Coefficient 0.9288**.
-
-Model Random Forest menghasilkan performa yang sangat baik dengan **Accuracy 96.47%**, **Precision 95.74%**, **Recall 97.83%**, dan **F1-Score 96.77%**. Hasil analisis menunjukkan bahwa tutupan vegetasi di Kabupaten Jember meningkat dari **62.41%** pada tahun 2024 menjadi **72.68%** pada tahun 2025.
-
-Secara keseluruhan terjadi **penambahan bersih tutupan vegetasi sebesar 34,097.59 hektar (+16.45%)**, dengan luas area **gain** mencapai **47,830.92 hektar (14.41%)**, lebih besar dibandingkan area **loss** sebesar **13,733.33 hektar (4.14%)**. Selain itu, **193,502.46 hektar (58.28%)** wilayah tetap berstatus vegetasi selama periode pengamatan. :contentReference[oaicite:0]{index=0}
+Hasil klasifikasi menggunakan algoritma **Random Forest** menunjukkan performa yang sangat baik dengan **Accuracy 96.47%**, **Precision 95.74%**, **Recall 97.83%**, dan **F1-Score 96.77%**. Analisis menunjukkan bahwa tutupan vegetasi di Kabupaten Jember meningkat dari **62.41%** pada tahun 2024 menjadi **72.68%** pada tahun 2025, dengan **penambahan bersih vegetasi sebesar 34,097.59 ha (+16.45%)**.
 
 Link WebGIS: https://web-gis-kelompok-8-kab-jember.vercel.app/
 
