@@ -10,19 +10,22 @@ Repositori ini berisi source code, data spasial, hasil analisis, serta aplikasi 
 
 **Semester:** Genap 2025/2026
 
-Informasi Proyek
+---
 
-Kota/Wilayah: Kabupaten Jember, Jawa Timur, Indonesia
-Objek Target: Vegetasi (dianalisis menggunakan indeks NDVI)
-Periode: 2024 vs 2025
-Metode: Sentinel-2, Random Forest, evaluasi APRF, WebGIS interaktif
+# 📌 Informasi Proyek
 
-Proyek ini memetakan perubahan tutupan vegetasi di Kabupaten Jember antara
-tahun 2024 dan 2025 menggunakan citra Sentinel-2 dan indeks NDVI, kemudian
-diklasifikasikan dengan model Random Forest. Hasil klasifikasi dievaluasi
-menggunakan confusion matrix dan metrik Accuracy, Precision, Recall, F1-score,
-lalu disajikan dalam WebGIS interaktif untuk menampilkan area vegetasi yang
-bertambah (gain), berkurang (loss), dan tetap (stable).
+| Informasi | Keterangan |
+|-----------|------------|
+| **Wilayah Studi** | Kabupaten Jember, Jawa Timur, Indonesia |
+| **Objek Analisis** | Vegetasi |
+| **Periode** | 2024–2025 |
+| **Data Satelit** | Sentinel-2 |
+| **Indeks Vegetasi** | NDVI |
+| **Metode Klasifikasi** | Random Forest |
+| **Evaluasi Model** | Accuracy, Precision, Recall, F1-Score (APRF) |
+| **Output** | WebGIS Interaktif |
+
+---
 
 Anggota Kelompok 8
 
