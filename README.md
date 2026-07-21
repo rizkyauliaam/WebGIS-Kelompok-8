@@ -27,14 +27,16 @@ Repositori ini berisi source code, data spasial, hasil analisis, serta aplikasi 
 
 ---
 
-Anggota Kelompok 8
+# 👥 Tim Pengembang
 
-1. Yudha Pandu Widyanto - 1232002075
-2. Willy Jonatan Sibagariang - 1232002020
-3. Rizky Aulia Maharani - 1232002072
-4. Cassandra Etania - 1232002065
-5. Atih Yulianti - 1232002001
-6. Exel Goklas Rivollet Sihombing - 1232002063
+| Nama | NIM | Peran |
+|------|------|--------------------------------|
+| Yudha Pandu Widyanto | 1232002075 | Data Collector & GEE Engineer |
+| Willy Jonatan Sibagariang | 1232002020 | GEE Engineer |
+| Rizky Aulia Maharani | 1232002072 | WebGIS Developer & Repository Manager |
+| Exel Goklas Rivollet Sihombing | 1232002063 | Repository Manager |
+| Cassandra Etania | 1232002065 | Technical Writer |
+| Atih Yulianti | 1232002001 | Technical Writer |
 
 Link WebGIS: https://web-gis-kelompok-8-kab-jember.vercel.app/
 
