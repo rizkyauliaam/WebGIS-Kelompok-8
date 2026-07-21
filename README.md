@@ -1,4 +1,4 @@
-# Klasifikasi dan Deteksi Perubahan Vegetasi Kabupaten Jember (2024–2025)
+# Pemetaan Perubahan Tutupan Vegetasi Kabupaten Jember (2024–2025)
 
 Repositori ini berisi source code, data spasial, hasil analisis, serta aplikasi WebGIS yang dikembangkan untuk memetakan perubahan tutupan vegetasi di Kabupaten Jember, Jawa Timur, pada periode 2024–2025. Analisis dilakukan menggunakan citra Sentinel-2, indeks NDVI, dan algoritma Random Forest yang dijalankan melalui Google Earth Engine. Hasil klasifikasi kemudian divisualisasikan dalam WebGIS interaktif untuk mendukung eksplorasi perubahan vegetasi secara spasial.
 
