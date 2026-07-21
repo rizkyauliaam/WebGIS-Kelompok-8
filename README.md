@@ -103,9 +103,7 @@ Hasil klasifikasi menggunakan algoritma **Random Forest** menunjukkan performa y
 
 ---
 
-Link WebGIS: https://web-gis-kelompok-8-kab-jember.vercel.app/
-
-Cara Membuka WebGIS
+## Cara Membuka WebGIS
 Buka link: https://web-gis-kelompok-8-kab-jember.vercel.app/
 
 WebGIS terdiri dari 4 tab:
