@@ -70,6 +70,31 @@ Alur: Sentinel-2 → Cloud Masking (QA60) → Median Composite → Feature Extra
 | Data Training | 215 titik |
 | Data Testing | 85 titik |
 
+## 📊 Hasil
+
+### Evaluasi Model
+
+| Metrik | Nilai |
+|--------|-------:|
+| Accuracy | 96.47% |
+| Precision | 95.74% |
+| Recall | 97.83% |
+| F1-Score | 96.77% |
+| Kappa Coefficient | 0.9288 |
+
+### Hasil Analisis Perubahan Vegetasi
+
+| Komponen | Luas (ha) |
+|----------|----------:|
+| Vegetasi 2024 | 207,235.79 |
+| Vegetasi 2025 | 241,333.38 |
+| Gain | 47,830.92 |
+| Loss | 13,733.33 |
+| Stable | 193,502.46 |
+| Net Change | +34,097.59 |
+
+Hasil analisis menunjukkan bahwa tutupan vegetasi di Kabupaten Jember mengalami peningkatan pada periode 2024–2025. Luas area **gain** lebih besar dibandingkan **loss**, sehingga terjadi penambahan bersih tutupan vegetasi sebesar **34,097.59 hektar**. Model Random Forest juga menunjukkan performa yang sangat baik dengan **Accuracy 96.47%** dan **Kappa Coefficient 0.9288**.
+
 Link WebGIS: https://web-gis-kelompok-8-kab-jember.vercel.app/
 
 Cara Membuka WebGIS
