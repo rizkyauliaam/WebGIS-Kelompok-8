@@ -20,10 +20,10 @@ bertambah (gain), berkurang (loss), dan tetap (stable).
 
 Anggota Kelompok 8
 
-1. Yudha Pandu Widyanto - 12320020752
-2. Willy Jonatan Sibagariang - 12320020203
+1. Yudha Pandu Widyanto - 1232002075
+2. Willy Jonatan Sibagariang - 1232002020
 3. Rizky Aulia Maharani - 1232002072
-4. Cassandra Etania - 12320020655
+4. Cassandra Etania - 1232002065
 5. Atih Yulianti - 1232002001
 6. Exel Goklas Rivollet Sihombing - 1232002063
 
