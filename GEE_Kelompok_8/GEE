@@ -634,6 +634,28 @@ var precision = tp / (tp + fp);
 var recall = tp / (tp + fn);
 var f1Score = 2 * (precision * recall) / (precision + recall);
 
+// ================================================================
+// TAMBAHAN: PERHITUNGAN KAPPA
+// ================================================================
+
+// Hitung Kappa Coefficient
+var totalObserved = (tp + tn);
+var totalExpected = ((tp + fp) * (tp + fn) + (fn + tn) * (fp + tn)) / total;
+var kappa = (totalObserved / total - totalExpected / total) / (1 - totalExpected / total);
+
+// Interpretasi Kappa
+function getKappaInterpretation(kappaValue) {
+  if (kappaValue < 0) return 'Poor (No agreement)';
+  else if (kappaValue < 0.20) return 'Slight agreement';
+  else if (kappaValue < 0.40) return 'Fair agreement';
+  else if (kappaValue < 0.60) return 'Moderate agreement';
+  else if (kappaValue < 0.80) return 'Substantial agreement';
+  else if (kappaValue < 1.00) return 'Almost perfect agreement';
+  else return 'Perfect agreement';
+}
+
+var kappaInterpretation = getKappaInterpretation(kappa);
+
 print('========================================');
 print('📊 CONFUSION MATRIX (Testing Data)');
 print('========================================');
@@ -663,19 +685,19 @@ var confusionChart = ui.Chart.feature.byFeature(
 
 print(confusionChart);
 
-
 print('========================================');
-print('📊 METRIK EVALUASI (Kelas TARGET = 1)');
+print('📊 METRIK EVALUASI MODEL');
 print('========================================');
 // ================================================================
-// CHART METRIK EVALUASI
+// CHART METRIK EVALUASI 
 // ================================================================
 
 var metricFC = ee.FeatureCollection([
   ee.Feature(null,{Metric:'Accuracy',Value:accuracy}),
   ee.Feature(null,{Metric:'Precision',Value:precision}),
   ee.Feature(null,{Metric:'Recall',Value:recall}),
-  ee.Feature(null,{Metric:'F1-Score',Value:f1Score})
+  ee.Feature(null,{Metric:'F1-Score',Value:f1Score}),
+  ee.Feature(null,{Metric:'Kappa',Value:kappa})  // TAMBAHAN KAPPA
 ]);
 
 var metricChart = ui.Chart.feature.byFeature(
@@ -685,7 +707,7 @@ var metricChart = ui.Chart.feature.byFeature(
 )
 .setChartType('ColumnChart')
 .setOptions({
-  title:'Model Evaluation',
+  title:'Model Evaluation ',
   legend:{position:'none'},
   hAxis:{title:'Metric'},
   vAxis:{
@@ -697,22 +719,36 @@ var metricChart = ui.Chart.feature.byFeature(
   }
 });
 
-print(metricChart);
+print(metricChart)
 
 print('✅ Accuracy  :', accuracy.toFixed(4));
 print('✅ Precision :', precision.toFixed(4));
 print('✅ Recall    :', recall.toFixed(4));
 print('✅ F1-Score  :', f1Score.toFixed(4));
+print('✅ Kappa     :', kappa.toFixed(4), '→', kappaInterpretation);
 print('========================================');
 print('📌 Total testing data:', total);
 print('========================================');
 
-// Interpretasi kesalahan
+// Interpretasi kesalahan (lanjutan)
 print('📌 Interpretasi Kesalahan:');
 print('  - True Positive (TP)  :', tp, '(model benar memprediksi Target)');
 print('  - True Negative (TN)  :', tn, '(model benar memprediksi Non-Target)');
 print('  - False Positive (FP) :', fp, '(model salah memprediksi Target)');
 print('  - False Negative (FN) :', fn, '(model gagal menemukan Target)');
+print('  - Kappa Coefficient   :', kappa.toFixed(4), '→', kappaInterpretation);
+
+if (kappa >= 0.80) {
+  print('  ✅ Model memiliki kesesuaian yang sangat baik (Almost Perfect).');
+} else if (kappa >= 0.60) {
+  print('  ✅ Model memiliki kesesuaian yang baik (Substantial).');
+} else if (kappa >= 0.40) {
+  print('  ⚠️ Model memiliki kesesuaian sedang (Moderate).');
+} else if (kappa >= 0.20) {
+  print('  ⚠️ Model memiliki kesesuaian rendah (Fair).');
+} else {
+  print('  ❌ Model memiliki kesesuaian sangat rendah (Slight/Poor).');
+}
 
 if (fp > fn) {
   print('  - Model lebih sering salah memprediksi non-target sebagai target (FP).');
@@ -724,7 +760,6 @@ if (fp > fn) {
   print('  - Kesalahan FP dan FN seimbang.');
 }
 print('========================================');
-
 // ================================================================
 // 2.7 ANALISIS PERUBAHAN (Gain/Loss/Stable)
 // ================================================================
@@ -1038,4 +1073,218 @@ print('  - Total ground truth:', groundTruth.size());
 print('  - Total training data:', trainingData.size());
 print('  - Scale vektorisasi: 15');
 print('  - Filter: TANPA FILTER (semua poligon ikut)');
+print('========================================');
+
+
+// ================================================================
+// 4.0 EKSPOR HASIL KE GITHUB 
+// ================================================================
+
+print('========================================');
+print('📊 EKSPOR HASIL UNTUK GITHUB');
+print('========================================');
+
+// ================================================================
+// 4.1 EKSPOR CONFUSION MATRIX (CSV) 
+// ================================================================
+
+var confusionMatrixFC = ee.FeatureCollection([
+  ee.Feature(null, {
+    'Kategori': 'True Negative (TN)',
+    'Nilai': tn,
+    'Keterangan': 'Model benar memprediksi Non-Target'
+  }),
+  ee.Feature(null, {
+    'Kategori': 'False Positive (FP)',
+    'Nilai': fp,
+    'Keterangan': 'Model salah memprediksi Target'
+  }),
+  ee.Feature(null, {
+    'Kategori': 'False Negative (FN)',
+    'Nilai': fn,
+    'Keterangan': 'Model gagal menemukan Target'
+  }),
+  ee.Feature(null, {
+    'Kategori': 'True Positive (TP)',
+    'Nilai': tp,
+    'Keterangan': 'Model benar memprediksi Target'
+  })
+]);
+
+Export.table.toDrive({
+  collection: confusionMatrixFC,
+  description: 'Jember_ConfusionMatrix',
+  folder: 'UAS_GEE_Export',
+  fileNamePrefix: 'Jember_ConfusionMatrix',
+  fileFormat: 'CSV'
+});
+
+print('✅ Confusion Matrix CSV siap diexport');
+
+// ================================================================
+// 4.2 EKSPOR METRIK APRF + KAPPA (CSV)
+// ================================================================
+
+var metricsFC = ee.FeatureCollection([
+  ee.Feature(null, {
+    'Metric': 'Accuracy',
+    'Value': accuracy,
+    'Interpretasi': 'Ketepatan total klasifikasi'
+  }),
+  ee.Feature(null, {
+    'Metric': 'Precision',
+    'Value': precision,
+    'Interpretasi': 'Ketepatan prediksi kelas Target'
+  }),
+  ee.Feature(null, {
+    'Metric': 'Recall',
+    'Value': recall,
+    'Interpretasi': 'Kemampuan menemukan kelas Target'
+  }),
+  ee.Feature(null, {
+    'Metric': 'F1-Score',
+    'Value': f1Score,
+    'Interpretasi': 'Harmonisasi Precision & Recall'
+  }),
+  ee.Feature(null, {
+    'Metric': 'Kappa',
+    'Value': kappa,
+    'Interpretasi': kappaInterpretation
+  })
+]);
+
+Export.table.toDrive({
+  collection: metricsFC,
+  description: 'Jember_Metrics_APRF_Kappa',
+  folder: 'UAS_GEE_Export',
+  fileNamePrefix: 'Jember_Metrics_APRF_Kappa',
+  fileFormat: 'CSV'
+});
+
+print('✅ Metrics APRF + Kappa CSV siap diexport');
+
+// ================================================================
+// 4.3 EKSPOR RINGKASAN LUAS & PERUBAHAN (CSV) 
+// ================================================================
+
+var areaSummaryFC = ee.FeatureCollection([
+  ee.Feature(null, {
+    'Kategori': 'Vegetasi 2024',
+    'Luas_ha': area_2024_val
+  }),
+  ee.Feature(null, {
+    'Kategori': 'Vegetasi 2025',
+    'Luas_ha': area_2025_val
+  }),
+  ee.Feature(null, {
+    'Kategori': 'Gain (Bertambah)',
+    'Luas_ha': area_gain_val
+  }),
+  ee.Feature(null, {
+    'Kategori': 'Loss (Berkurang)',
+    'Luas_ha': area_loss_val
+  }),
+  ee.Feature(null, {
+    'Kategori': 'Stable Vegetasi',
+    'Luas_ha': area_stable_veg_val
+  }),
+  ee.Feature(null, {
+    'Kategori': 'Perubahan Bersih',
+    'Luas_ha': (area_2025_val - area_2024_val)
+  }),
+  ee.Feature(null, {
+    'Kategori': 'Persentase Perubahan',
+    'Luas_ha': persentase
+  })
+]);
+
+Export.table.toDrive({
+  collection: areaSummaryFC,
+  description: 'Jember_Area_Change_Summary',
+  folder: 'UAS_GEE_Export',
+  fileNamePrefix: 'Jember_Area_Change_Summary',
+  fileFormat: 'CSV'
+});
+
+print('✅ Area Change Summary CSV siap diexport');
+
+// ================================================================
+// 4.4 EKSPOR METADATA (CSV) - PAKAI NILAI YANG SUDAH ADA
+// ================================================================
+
+// Ambil nilai dengan .getInfo() DULU sebelum masuk ke FeatureCollection
+var groundTruthSize = groundTruth.size().getInfo();
+var trainingSize = training.size().getInfo();
+var testingSize = testing.size().getInfo();
+
+var metadataFC = ee.FeatureCollection([
+  ee.Feature(null, {
+    'Parameter': 'Metode Klasifikasi',
+    'Nilai': 'Random Forest (smileRandomForest)'
+  }),
+  ee.Feature(null, {
+    'Parameter': 'Jumlah Trees',
+    'Nilai': '100'
+  }),
+  ee.Feature(null, {
+    'Parameter': 'Seed Split',
+    'Nilai': String(SEED)
+  }),
+  ee.Feature(null, {
+    'Parameter': 'Total Ground Truth',
+    'Nilai': String(groundTruthSize)
+  }),
+  ee.Feature(null, {
+    'Parameter': 'Total Training',
+    'Nilai': String(trainingSize)
+  }),
+  ee.Feature(null, {
+    'Parameter': 'Total Testing',
+    'Nilai': String(testingSize)
+  }),
+  ee.Feature(null, {
+    'Parameter': 'Scale Vektorisasi',
+    'Nilai': '30 meter'
+  }),
+  ee.Feature(null, {
+    'Parameter': 'Filter Vektorisasi',
+    'Nilai': 'Tanpa Filter (semua poligon ikut)'
+  }),
+  ee.Feature(null, {
+    'Parameter': 'Lokasi Studi',
+    'Nilai': 'Kabupaten Jember'
+  }),
+  ee.Feature(null, {
+    'Parameter': 'Periode',
+    'Nilai': '2024-2025'
+  })
+]);
+
+Export.table.toDrive({
+  collection: metadataFC,
+  description: 'Jember_Metadata',
+  folder: 'UAS_GEE_Export',
+  fileNamePrefix: 'Jember_Metadata',
+  fileFormat: 'CSV'
+});
+
+print('✅ Metadata CSV siap diexport');
+
+// ================================================================
+// 4.5 CEK NILAI METADATA DI CONSOLE
+// ================================================================
+
+print('========================================');
+print('📊 METADATA MODEL:');
+print('========================================');
+print('Metode Klasifikasi     : Random Forest (smileRandomForest)');
+print('Jumlah Trees           : 100');
+print('Seed Split             :', SEED);
+print('Total Ground Truth     :', groundTruthSize);
+print('Total Training         :', trainingSize);
+print('Total Testing          :', testingSize);
+print('Scale Vektorisasi      : 30 meter');
+print('Filter Vektorisasi     : Tanpa Filter (semua poligon ikut)');
+print('Lokasi Studi           : Kabupaten Jember');
+print('Periode                : 2024-2025');
 print('========================================');
