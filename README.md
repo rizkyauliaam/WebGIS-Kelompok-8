@@ -56,6 +56,7 @@ Kabupaten Jember dipilih sebagai wilayah studi karena memiliki karakteristik yan
 
 Alur: Sentinel-2 → Cloud Masking (QA60) → Median Composite → Feature Extraction (Band Spektral + NDVI, NDWI, NDBI, EVI, SAVI) → Ground Truth → Split Data 70:30 → Random Forest → Evaluasi Model (Accuracy, Precision, Recall, F1-Score, Kappa) → Klasifikasi Vegetasi 2024 & 2025 → Analisis Perubahan (Gain, Loss, Stable) → WebGIS Interaktif
 
+---
 
 ## Konfigurasi Model
 
@@ -69,6 +70,8 @@ Alur: Sentinel-2 → Cloud Masking (QA60) → Median Composite → Feature Extra
 | Ground Truth | 300 titik |
 | Data Training | 215 titik |
 | Data Testing | 85 titik |
+
+---
 
 ## 📊 Hasil
 
@@ -95,6 +98,8 @@ Alur: Sentinel-2 → Cloud Masking (QA60) → Median Composite → Feature Extra
 | Net Change | +34,097.59 | +16.45% |
 
 Hasil klasifikasi menggunakan algoritma **Random Forest** menunjukkan performa yang sangat baik dengan **Accuracy 96.47%**, **Precision 95.74%**, **Recall 97.83%**, dan **F1-Score 96.77%**. Analisis menunjukkan bahwa tutupan vegetasi di Kabupaten Jember meningkat dari **62.41%** pada tahun 2024 menjadi **72.68%** pada tahun 2025, dengan **penambahan bersih vegetasi sebesar 34,097.59 ha (+16.45%)**.
+
+---
 
 Link WebGIS: https://web-gis-kelompok-8-kab-jember.vercel.app/
 
