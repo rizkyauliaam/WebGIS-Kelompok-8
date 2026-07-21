@@ -54,31 +54,7 @@ Kabupaten Jember dipilih sebagai wilayah studi karena memiliki karakteristik yan
 | Band | B2, B3, B4, B8, B11, B12 |
 | Indeks | NDVI, NDWI, NDBI, EVI, SAVI |
 
-# Metodologi
-
-```text
-Sentinel-2
-      │
-      ▼
-Preprocessing
-      │
-      ▼
-Perhitungan NDVI
-      │
-      ▼
-Ground Truth
-      │
-      ▼
-Random Forest
-      │
-      ▼
-Evaluasi APRF
-      │
-      ▼
-Analisis Gain • Loss • Stable
-      │
-      ▼
-WebGIS Interaktif
+Alur: Sentinel-2 → Cloud Masking (QA60) → Median Composite → Feature Extraction (Band Spektral + NDVI, NDWI, NDBI, EVI, SAVI) → Ground Truth → Split Data 70:30 → Random Forest → Evaluasi Model (Accuracy, Precision, Recall, F1-Score, Kappa) → Klasifikasi Vegetasi 2024 & 2025 → Analisis Perubahan (Gain, Loss, Stable) → WebGIS Interaktif
 ```
 ## Konfigurasi Model
 
