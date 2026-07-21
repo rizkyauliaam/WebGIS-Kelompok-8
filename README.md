@@ -64,6 +64,18 @@ Analisis Gain • Loss • Stable
       ▼
 WebGIS Interaktif
 ```
+## 🤖 Konfigurasi Model
+
+| Parameter | Nilai |
+|-----------|--------|
+| Metode Split | 70:30 |
+| Seed | 42 |
+| Algoritma | Random Forest |
+| Jumlah Trees | 100 |
+| Jumlah Fitur | 11 (6 band + 5 indeks) |
+| Ground Truth | 300 titik |
+| Data Training | 215 titik |
+| Data Testing | 85 titik |
 
 Link WebGIS: https://web-gis-kelompok-8-kab-jember.vercel.app/
 
