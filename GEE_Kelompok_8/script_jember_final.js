@@ -304,1015 +304,2059 @@ var GT_2024_Target = /* color: #d63000 */ee.Geometry.MultiPoint(
          [113.7610800049108, -8.487510941003585],
          [113.77275297854361, -8.489548311817053]]);
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
-// ================================================================
-// UAS GABUNGAN: KAPITA SELEKTA + MAHA DATA
-// Kabupaten Jember - Klasifikasi Vegetasi dengan Random Forest
-// Periode: 2024 vs 2025
-// ================================================================
 
 // ================================================================
-// BAGIAN 1: KAPITA SELEKTA (PERSIAPAN DATA SPASIAL)
+
+// UAS GABUNGAN: KAPITA SELEKTA + MAHA DATA
+
+// Kabupaten Jember - Klasifikasi Vegetasi dengan Random Forest
+
+// Periode: 2024 vs 2025
+
 // ================================================================
+
+
+
+// ================================================================
+
+// BAGIAN 1: KAPITA SELEKTA (PERSIAPAN DATA SPASIAL)
+
+// ================================================================
+
+
 
 // 1.1 LOAD WILAYAH STUDI
+
 var jember = ee.FeatureCollection('projects/jember-vegetasi-analisis/assets/Jember');
+
 Map.centerObject(jember, 10);
+
 Map.addLayer(jember, {color: 'red'}, 'Batas Kabupaten Jember');
 
+
+
 // 1.2 AMBIL SENTINEL-2 2024 & 2025
+
 var s2 = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED');
 
+
+
 function maskClouds(image) {
+
   var qa = image.select('QA60');
+
   var cloudBitMask = 1 << 10;
+
   var cirrusBitMask = 1 << 11;
+
   var mask = qa.bitwiseAnd(cloudBitMask).eq(0)
+
     .and(qa.bitwiseAnd(cirrusBitMask).eq(0));
+
   return image.updateMask(mask);
+
 }
 
-var s2_2024 = s2
+
+
+// =======================
+
+// Sentinel-2 Tahun 2024
+
+// =======================
+
+var s2Collection2024 = s2
+
   .filterBounds(jember)
+
   .filterDate('2024-01-01', '2024-12-31')
-  .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20))
+
+  .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20));
+
+
+
+print('Jumlah Scene 2024:', s2Collection2024.size());
+
+print('Daftar Scene 2024:', s2Collection2024);
+
+
+
+var s2_2024 = s2Collection2024
+
   .map(maskClouds)
+
   .median()
+
   .clip(jember);
 
-var s2_2025 = s2
+
+
+// =======================
+
+// Sentinel-2 Tahun 2025
+
+// =======================
+
+var s2Collection2025 = s2
+
   .filterBounds(jember)
+
   .filterDate('2025-01-01', '2025-12-31')
-  .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20))
+
+  .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20));
+
+
+
+print('Jumlah Scene 2025:', s2Collection2025.size());
+
+print('Daftar Scene 2025:', s2Collection2025);
+
+
+
+var s2_2025 = s2Collection2025
+
   .map(maskClouds)
+
   .median()
+
   .clip(jember);
+
+
 
 Map.addLayer(s2_2024, {bands: ['B4', 'B3', 'B2'], min: 0, max: 3000}, 'Citra 2024');
+
 Map.addLayer(s2_2025, {bands: ['B4', 'B3', 'B2'], min: 0, max: 3000}, 'Citra 2025');
 
+
+
 // 1.3 BUAT FEATURE STACK (BAND + INDEKS)
+
 function addIndices(image) {
+
   var ndvi = image.normalizedDifference(['B8', 'B4']).rename('NDVI');
+
   var ndwi = image.normalizedDifference(['B3', 'B8']).rename('NDWI');
+
   var ndbi = image.normalizedDifference(['B11', 'B8']).rename('NDBI');
+
   var evi = image.expression(
+
     '2.5 * ((NIR - RED) / (NIR + 6 * RED - 7.5 * BLUE + 1))', {
+
       'NIR': image.select('B8'),
+
       'RED': image.select('B4'),
+
       'BLUE': image.select('B2')
+
   }).rename('EVI');
+
   var savi = image.expression(
+
     '1.5 * ((NIR - RED) / (NIR + RED + 0.5))', {
+
       'NIR': image.select('B8'),
+
       'RED': image.select('B4')
+
   }).rename('SAVI');
+
   return image.addBands([ndvi, ndwi, ndbi, evi, savi]);
+
 }
 
+
+
 var features_2024 = addIndices(s2_2024);
+
 var features_2025 = addIndices(s2_2025);
+
+
 
 var bandNames = ['B2', 'B3', 'B4', 'B8', 'B11', 'B12', 'NDVI', 'NDWI', 'NDBI', 'EVI', 'SAVI'];
 
+
+
 Map.addLayer(features_2024.select('NDVI'), {min: -0.2, max: 0.8, palette: ['blue', 'white', 'green']}, 'NDVI 2024');
+
 Map.addLayer(features_2025.select('NDVI'), {min: -0.2, max: 0.8, palette: ['blue', 'white', 'green']}, 'NDVI 2025');
 
+
+
 print('✅ Fitur 2024:', features_2024);
+
 print('✅ Fitur 2025:', features_2025);
 
+
+
 // 1.4 GROUND TRUTH (KONVERSI MULTIPOINT)
+
 // 🔴 PASTIKAN: Layer di Geometry Imports sudah di-import dengan nama:
+
 // GT_2024_Target, GT_2024_NonTarget, GT_2025_Target, GT_2025_NonTarget
 
+
+
 function convertMultiPointToFC(multiPoint, label, year) {
+
   var coords = multiPoint.coordinates();
+
   var numPoints = coords.size().getInfo();
+
   var features = ee.List([]);
+
   for (var i = 0; i < numPoints; i++) {
+
     var point = ee.Geometry.Point(coords.get(i));
+
     var feature = ee.Feature(point, {'class': label, 'year': year});
+
     features = features.add(feature);
+
   }
+
   return ee.FeatureCollection(features);
+
 }
 
+
+
 var gt_2024_target = convertMultiPointToFC(GT_2024_Target, 1, 2024);
+
 var gt_2024_nontarget = convertMultiPointToFC(GT_2024_NonTarget, 0, 2024);
+
 var gt_2025_target = convertMultiPointToFC(GT_2025_Target, 1, 2025);
+
 var gt_2025_nontarget = convertMultiPointToFC(GT_2025_NonTarget, 0, 2025);
 
+
+
 var groundTruth = gt_2024_target
+
   .merge(gt_2024_nontarget)
+
   .merge(gt_2025_target)
+
   .merge(gt_2025_nontarget);
 
+
+
 print('========================================');
+
 print('📊 CEK GROUND TRUTH');
+
 print('========================================');
+
 print('Total titik:', groundTruth.size());
+
 print('Distribusi kelas:', groundTruth.aggregate_histogram('class'));
+
 print('Distribusi tahun:', groundTruth.aggregate_histogram('year'));
 
+
+
 // Ambil histogram class & year
+
 var distribusiClass = groundTruth.aggregate_histogram('class');
+
 var distribusiYear = groundTruth.aggregate_histogram('year');
 
+
+
 // Chart Distribusi Class
+
 var chartDistribusiClass = ui.Chart.array.values(
+
   distribusiClass.values(), 0, distribusiClass.keys()
+
 ).setChartType('ColumnChart')
+
  .setOptions({title: 'Distribusi Ground Truth (Class)', hAxis: {title: 'Class'}, vAxis: {title: 'Jumlah'}});
+
 print(chartDistribusiClass);
 
+
+
 // Chart Distribusi Year
+
 var chartDistribusiYear = ui.Chart.array.values(
+
   distribusiYear.values(), 0, distribusiYear.keys()
+
 ).setChartType('ColumnChart')
+
  .setOptions({title: 'Distribusi Ground Truth (Year)', hAxis: {title: 'Year'}, vAxis: {title: 'Jumlah'}});
+
 print(chartDistribusiYear);
 
+
+
 print('========================================');
+
+
 
 Map.addLayer(groundTruth.filter(ee.Filter.eq('class', 1)), {color: '00ff00'}, 'Target (Vegetasi)');
+
 Map.addLayer(groundTruth.filter(ee.Filter.eq('class', 0)), {color: 'ff0000'}, 'Non-Target');
 
+
+
 // 1.5 EKSPOR KE ASSET
+
 var features_2024_export = features_2024.select(bandNames).toFloat();
+
 var features_2025_export = features_2025.select(bandNames).toFloat();
 
-Export.image.toAsset({
-  image: features_2024_export,
-  description: 'Jember_Features_2024',
-  assetId: 'projects/jember-vegetasi-analisis/assets/features_2024',
-  region: jember.geometry(),
-  scale: 10,
-  maxPixels: 1e9,
-  pyramidingPolicy: {'default': 'mean'}
-});
+
 
 Export.image.toAsset({
-  image: features_2025_export,
-  description: 'Jember_Features_2025',
-  assetId: 'projects/jember-vegetasi-analisis/assets/features_2025',
+
+  image: features_2024_export,
+
+  description: 'Jember_Features_2024',
+
+  assetId: 'projects/jember-vegetasi-analisis/assets/features_2024',
+
   region: jember.geometry(),
+
   scale: 10,
+
   maxPixels: 1e9,
+
   pyramidingPolicy: {'default': 'mean'}
+
 });
+
+
+
+Export.image.toAsset({
+
+  image: features_2025_export,
+
+  description: 'Jember_Features_2025',
+
+  assetId: 'projects/jember-vegetasi-analisis/assets/features_2025',
+
+  region: jember.geometry(),
+
+  scale: 10,
+
+  maxPixels: 1e9,
+
+  pyramidingPolicy: {'default': 'mean'}
+
+});
+
+
 
 Export.table.toAsset({
+
   collection: groundTruth,
+
   description: 'Jember_GroundTruth_Complete',
+
   assetId: 'projects/jember-vegetasi-analisis/assets/ground_truth_complete'
+
 });
+
+
 
 // 1.6 EKSTRAK DATA TRAINING
+
 var gt_2024_all = groundTruth.filter(ee.Filter.eq('year', 2024));
+
 var gt_2025_all = groundTruth.filter(ee.Filter.eq('year', 2025));
 
+
+
 var trainingData_2024 = features_2024.select(bandNames).sampleRegions({
+
   collection: gt_2024_all,
+
   properties: ['class', 'year'],
+
   scale: 10,
+
   tileScale: 16
+
 });
+
+
 
 var trainingData_2025 = features_2025.select(bandNames).sampleRegions({
+
   collection: gt_2025_all,
+
   properties: ['class', 'year'],
+
   scale: 10,
+
   tileScale: 16
+
 });
+
+
 
 var trainingData = trainingData_2024.merge(trainingData_2025);
+
 print('📊 Total training data:', trainingData.size());
 
+
+
 Export.table.toAsset({
+
   collection: trainingData,
+
   description: 'Jember_TrainingData_Complete',
+
   assetId: 'projects/jember-vegetasi-analisis/assets/training_data_complete'
+
 });
 
+
+
 // ================================================================
+
 // BAGIAN 2: MAHA DATA (RANDOM FOREST)
+
 // ================================================================
+
+
 
 // CEK DATA
+
 print('========================================');
+
 print('📊 CEK DATA MAHA DATA');
+
 print('========================================');
+
 print('Feature Stack 2024:', features_2024);
+
 print('Feature Stack 2025:', features_2025);
+
 print('Ground Truth:', groundTruth);
+
 print('Training Data:', trainingData);
+
 print('Jumlah Ground Truth:', groundTruth.size());
+
 print('Jumlah Training Data:', trainingData.size());
+
 print('Distribusi Tahun:', groundTruth.aggregate_histogram('year'));
+
 print('Distribusi Class:', groundTruth.aggregate_histogram('class'));
+
 print('========================================');
+
+
 
 // 2.2 SPLIT DATA 70:30 DENGAN SEED TETAP
+
 var SEED = 42;
+
 print('📌 Seed yang digunakan:', SEED);
 
+
+
 // DATA 2024
+
 var target2024 = trainingData.filter(
+
   ee.Filter.and(
+
     ee.Filter.eq('class', 1),
+
     ee.Filter.eq('year', 2024)
+
   )
+
 ).randomColumn('random', SEED);
+
+
 
 var nonTarget2024 = trainingData.filter(
+
   ee.Filter.and(
+
     ee.Filter.eq('class', 0),
+
     ee.Filter.eq('year', 2024)
+
   )
+
 ).randomColumn('random', SEED);
+
+
 
 // DATA 2025
+
 var target2025 = trainingData.filter(
+
   ee.Filter.and(
+
     ee.Filter.eq('class', 1),
+
     ee.Filter.eq('year', 2025)
+
   )
+
 ).randomColumn('random', SEED);
+
+
 
 var nonTarget2025 = trainingData.filter(
+
   ee.Filter.and(
+
     ee.Filter.eq('class', 0),
+
     ee.Filter.eq('year', 2025)
+
   )
+
 ).randomColumn('random', SEED);
 
+
+
 // TRAINING DATASET (70%)
+
 var trainTarget2024 = target2024.filter(ee.Filter.lt('random', 0.7));
+
 var trainNonTarget2024 = nonTarget2024.filter(ee.Filter.lt('random', 0.7));
+
 var trainTarget2025 = target2025.filter(ee.Filter.lt('random', 0.7));
+
 var trainNonTarget2025 = nonTarget2025.filter(ee.Filter.lt('random', 0.7));
 
+
+
 // TESTING DATASET (30%)
+
 var testTarget2024 = target2024.filter(ee.Filter.gte('random', 0.7));
+
 var testNonTarget2024 = nonTarget2024.filter(ee.Filter.gte('random', 0.7));
+
 var testTarget2025 = target2025.filter(ee.Filter.gte('random', 0.7));
+
 var testNonTarget2025 = nonTarget2025.filter(ee.Filter.gte('random', 0.7));
 
+
+
 // GABUNGKAN
+
 var training = trainTarget2024
+
   .merge(trainNonTarget2024)
+
   .merge(trainTarget2025)
+
   .merge(trainNonTarget2025);
 
+
+
 var testing = testTarget2024
+
   .merge(testNonTarget2024)
+
   .merge(testTarget2025)
+
   .merge(testNonTarget2025);
 
+
+
 // HASIL SPLIT
+
 print('========================================');
+
 print('📊 HASIL SPLIT DATA');
+
 print('========================================');
+
 print('📌 TRAINING:');
+
 print('  - Vegetasi 2024:', trainTarget2024.size());
+
 print('  - Non Veg 2024 :', trainNonTarget2024.size());
+
 print('  - Vegetasi 2025:', trainTarget2025.size());
+
 print('  - Non Veg 2025 :', trainNonTarget2025.size());
+
 print('📌 TESTING:');
+
 print('  - Vegetasi 2024:', testTarget2024.size());
+
 print('  - Non Veg 2024 :', testNonTarget2024.size());
+
 print('  - Vegetasi 2025:', testTarget2025.size());
+
 print('  - Non Veg 2025 :', testNonTarget2025.size());
+
 print('📌 TOTAL:');
+
 print('  - Training:', training.size());
+
 print('  - Testing :', testing.size());
+
 print('📌 DISTRIBUSI:');
+
 print('  - Class Training:', training.aggregate_histogram('class'));
+
 print('  - Class Testing :', testing.aggregate_histogram('class'));
+
 print('  - Tahun Training:', training.aggregate_histogram('year'));
+
 print('  - Tahun Testing :', testing.aggregate_histogram('year'));
+
 print('========================================');
+
+
 
 // 2.4 TRAINING MODEL RANDOM FOREST (100 trees)
+
 var classifier = ee.Classifier.smileRandomForest({
+
   numberOfTrees: 100,
+
   seed: SEED
+
 });
+
+
 
 var trainedClassifier = classifier.train({
+
   features: training,
+
   classProperty: 'class',
+
   inputProperties: bandNames
+
 });
 
+
+
 print('✅ Model Random Forest siap!');
+
 print('📌 Konfigurasi: 100 trees, seed=', SEED);
+
 print('📌 Fitur yang digunakan:', bandNames);
 
+
+
 // 2.5 KLASIFIKASI CITRA 2024 & 2025
+
 var classified2024 = features_2024.select(bandNames).classify(trainedClassifier);
+
 var classified2025 = features_2025.select(bandNames).classify(trainedClassifier);
 
+
+
 Map.addLayer(classified2024, {min: 0, max: 1, palette: ['red', 'green']}, 'Klasifikasi 2024');
+
 Map.addLayer(classified2025, {min: 0, max: 1, palette: ['red', 'green']}, 'Klasifikasi 2025');
+
+
 
 print('✅ Klasifikasi selesai!');
 
+
+
 // 2.6 EVALUASI MODEL
+
 var testingClassification = testing.classify(trainedClassifier);
+
 var confusionMatrix = testingClassification.errorMatrix('class', 'classification');
 
+
+
 // Ekstrak nilai Confusion Matrix
+
 var cmArray = confusionMatrix.getInfo();
+
 var tn = cmArray[0][0];
+
 var fp = cmArray[0][1];
+
 var fn = cmArray[1][0];
+
 var tp = cmArray[1][1];
 
+
+
 var total = tn + fp + fn + tp;
+
 var accuracy = (tp + tn) / total;
+
 var precision = tp / (tp + fp);
+
 var recall = tp / (tp + fn);
+
 var f1Score = 2 * (precision * recall) / (precision + recall);
 
+
+
 // ================================================================
+
 // TAMBAHAN: PERHITUNGAN KAPPA
+
 // ================================================================
+
+
 
 // Hitung Kappa Coefficient
+
 var totalObserved = (tp + tn);
+
 var totalExpected = ((tp + fp) * (tp + fn) + (fn + tn) * (fp + tn)) / total;
+
 var kappa = (totalObserved / total - totalExpected / total) / (1 - totalExpected / total);
 
+
+
 // Interpretasi Kappa
+
 function getKappaInterpretation(kappaValue) {
+
   if (kappaValue < 0) return 'Poor (No agreement)';
+
   else if (kappaValue < 0.20) return 'Slight agreement';
+
   else if (kappaValue < 0.40) return 'Fair agreement';
+
   else if (kappaValue < 0.60) return 'Moderate agreement';
+
   else if (kappaValue < 0.80) return 'Substantial agreement';
+
   else if (kappaValue < 1.00) return 'Almost perfect agreement';
+
   else return 'Perfect agreement';
+
 }
+
+
 
 var kappaInterpretation = getKappaInterpretation(kappa);
 
+
+
 print('========================================');
+
 print('📊 CONFUSION MATRIX (Testing Data)');
+
 print('========================================');
+
 // ================================================================
+
 // CHART CONFUSION MATRIX
+
 // ================================================================
+
+
 
 var confusionFC = ee.FeatureCollection([
+
   ee.Feature(null, {Kategori:'True Negative', Nilai:tn}),
+
   ee.Feature(null, {Kategori:'False Positive', Nilai:fp}),
+
   ee.Feature(null, {Kategori:'False Negative', Nilai:fn}),
+
   ee.Feature(null, {Kategori:'True Positive', Nilai:tp})
+
 ]);
 
+
+
 var confusionChart = ui.Chart.feature.byFeature(
+
   confusionFC,
+
   'Kategori',
+
   'Nilai'
+
 )
+
 .setChartType('ColumnChart')
+
 .setOptions({
+
   title:'Confusion Matrix',
+
   legend:{position:'none'},
+
   hAxis:{title:'Kategori'},
+
   vAxis:{title:'Jumlah'}
+
 });
+
+
 
 print(confusionChart);
 
+
+
 print('========================================');
+
 print('📊 METRIK EVALUASI MODEL');
+
 print('========================================');
+
 // ================================================================
+
 // CHART METRIK EVALUASI 
+
 // ================================================================
+
+
 
 var metricFC = ee.FeatureCollection([
+
   ee.Feature(null,{Metric:'Accuracy',Value:accuracy}),
+
   ee.Feature(null,{Metric:'Precision',Value:precision}),
+
   ee.Feature(null,{Metric:'Recall',Value:recall}),
+
   ee.Feature(null,{Metric:'F1-Score',Value:f1Score}),
+
   ee.Feature(null,{Metric:'Kappa',Value:kappa})  // TAMBAHAN KAPPA
+
 ]);
 
+
+
 var metricChart = ui.Chart.feature.byFeature(
+
   metricFC,
+
   'Metric',
+
   'Value'
+
 )
+
 .setChartType('ColumnChart')
+
 .setOptions({
+
   title:'Model Evaluation ',
+
   legend:{position:'none'},
+
   hAxis:{title:'Metric'},
+
   vAxis:{
+
     title:'Value',
+
     viewWindow:{
+
       min:0,
+
       max:1
+
     }
+
   }
+
 });
+
+
 
 print(metricChart)
 
+
+
 print('✅ Accuracy  :', accuracy.toFixed(4));
+
 print('✅ Precision :', precision.toFixed(4));
+
 print('✅ Recall    :', recall.toFixed(4));
+
 print('✅ F1-Score  :', f1Score.toFixed(4));
+
 print('✅ Kappa     :', kappa.toFixed(4), '→', kappaInterpretation);
+
 print('========================================');
+
 print('📌 Total testing data:', total);
+
 print('========================================');
+
+
 
 // Interpretasi kesalahan (lanjutan)
+
 print('📌 Interpretasi Kesalahan:');
+
 print('  - True Positive (TP)  :', tp, '(model benar memprediksi Target)');
+
 print('  - True Negative (TN)  :', tn, '(model benar memprediksi Non-Target)');
+
 print('  - False Positive (FP) :', fp, '(model salah memprediksi Target)');
+
 print('  - False Negative (FN) :', fn, '(model gagal menemukan Target)');
+
 print('  - Kappa Coefficient   :', kappa.toFixed(4), '→', kappaInterpretation);
 
+
+
 if (kappa >= 0.80) {
+
   print('  ✅ Model memiliki kesesuaian yang sangat baik (Almost Perfect).');
+
 } else if (kappa >= 0.60) {
+
   print('  ✅ Model memiliki kesesuaian yang baik (Substantial).');
+
 } else if (kappa >= 0.40) {
+
   print('  ⚠️ Model memiliki kesesuaian sedang (Moderate).');
+
 } else if (kappa >= 0.20) {
+
   print('  ⚠️ Model memiliki kesesuaian rendah (Fair).');
+
 } else {
+
   print('  ❌ Model memiliki kesesuaian sangat rendah (Slight/Poor).');
+
 }
+
+
 
 if (fp > fn) {
+
   print('  - Model lebih sering salah memprediksi non-target sebagai target (FP).');
+
   print('  - Kemungkinan: vegetasi muda/semak tertukar dengan non-target.');
+
 } else if (fn > fp) {
+
   print('  - Model lebih sering gagal menemukan target yang sebenarnya ada (FN).');
+
   print('  - Kemungkinan: vegetasi tipis/tertutup awan tidak terdeteksi.');
+
 } else {
+
   print('  - Kesalahan FP dan FN seimbang.');
+
 }
+
 print('========================================');
+
 // ================================================================
+
 // 2.7 ANALISIS PERUBAHAN (Gain/Loss/Stable)
+
 // ================================================================
+
+
 
 var gain = classified2024.eq(0).and(classified2025.eq(1)).rename('gain');
+
 var loss = classified2024.eq(1).and(classified2025.eq(0)).rename('loss');
+
 var stable_veg = classified2024.eq(1).and(classified2025.eq(1)).rename('stable_veg');
+
 var stable_non = classified2024.eq(0).and(classified2025.eq(0)).rename('stable_non');
 
+
+
 Map.addLayer(gain, {palette: ['00ff00']}, 'Gain (Bertambah)');
+
 Map.addLayer(loss, {palette: ['ff0000']}, 'Loss (Berkurang)');
+
 Map.addLayer(stable_veg, {palette: ['0000ff']}, 'Stable Vegetasi');
 
+
+
 // ================================================================
+
 // 2.7B CHANGE MAP 4 KATEGORI (GABUNGAN)
+
 // ================================================================
+
+
 
 var changeMap = ee.Image(0)
+
   .where(stable_non, 0)   // Tetap non-vegetasi (0->0)
+
   .where(gain, 1)         // Gain (0->1)
+
   .where(loss, 2)         // Loss (1->0)
+
   .where(stable_veg, 3)   // Tetap vegetasi (1->1)
+
   .clip(jember);
 
+
+
 var changePalette = ['d9d9d9', '4daf4a', 'e41a1c', '1a9641'];
+
 // 0=abu-abu (tetap non-veg) | 1=hijau muda (gain) | 2=merah (loss) | 3=hijau tua (tetap veg)
+
+
 
 Map.addLayer(changeMap, {min: 0, max: 3, palette: changePalette}, 'Change Map 4 Kategori');
 
+
+
 // ================================================================
+
 // 2.8 HITUNG LUAS (dalam hektar)
+
 // ================================================================
+
+
 
 function calculateArea(image, bandName) {
+
   var areaImage = image.multiply(ee.Image.pixelArea());
+
   var area = areaImage.reduceRegion({
+
     reducer: ee.Reducer.sum(),
+
     geometry: jember.geometry(),
+
     scale: 10,
+
     maxPixels: 1e9
+
   });
+
   return area.getNumber(bandName).divide(10000);
+
 }
 
+
+
 var area_2024 = calculateArea(classified2024, 'classification');
+
 var area_2025 = calculateArea(classified2025, 'classification');
+
 var area_gain = calculateArea(gain, 'gain');
+
 var area_loss = calculateArea(loss, 'loss');
+
 var area_stable_veg = calculateArea(stable_veg, 'stable_veg');
 
+
+
 var area_2024_val = area_2024.getInfo();
+
 var area_2025_val = area_2025.getInfo();
+
 var area_gain_val = area_gain.getInfo();
+
 var area_loss_val = area_loss.getInfo();
+
 var area_stable_veg_val = area_stable_veg.getInfo();
 
+
+
 print('========================================');
+
 print('📊 ANALISIS PERUBAHAN VEGETASI');
+
 print('========================================');
+
 // ================================================================
+
 // CHART ANALISIS PERUBAHAN VEGETASI
+
 // ================================================================
+
 var areaFC = ee.FeatureCollection([
+
   ee.Feature(null,{Kategori:'Vegetasi 2024',Luas:area_2024_val}),
+
   ee.Feature(null,{Kategori:'Vegetasi 2025',Luas:area_2025_val}),
+
   ee.Feature(null,{Kategori:'Gain',Luas:area_gain_val}),
+
   ee.Feature(null,{Kategori:'Loss',Luas:area_loss_val}),
+
   ee.Feature(null,{Kategori:'Stable',Luas:area_stable_veg_val})
+
 ]);
 
+
+
 var areaChart = ui.Chart.feature.byFeature(
+
   areaFC,
+
   'Kategori',
+
   'Luas'
+
 )
+
 .setChartType('ColumnChart')
+
 .setOptions({
+
   title:'Analisis Perubahan Vegetasi',
+
   legend:{position:'none'},
+
   hAxis:{title:'Kategori'},
+
   vAxis:{title:'Luas (ha)'}
+
 });
+
+
 
 print(areaChart);
 
+
+
 print('📌 Luas vegetasi 2024      :', area_2024_val.toFixed(2), 'ha');
+
 print('📌 Luas vegetasi 2025      :', area_2025_val.toFixed(2), 'ha');
+
 print('📌 Gain (bertambah)        :', area_gain_val.toFixed(2), 'ha');
+
 print('📌 Loss (berkurang)        :', area_loss_val.toFixed(2), 'ha');
+
 print('📌 Stable Vegetasi         :', area_stable_veg_val.toFixed(2), 'ha');
+
 print('📌 Perubahan bersih        :', (area_2025_val - area_2024_val).toFixed(2), 'ha');
+
 var persentase = ((area_2025_val - area_2024_val) / area_2024_val * 100);
+
 print('📌 Persentase perubahan    :', persentase.toFixed(2), '%');
+
 print('========================================');
+
+
 
 var luasTotalKota = jember.geometry().area().divide(10000);
+
 var luasTotalKota_val = luasTotalKota.getInfo();
 
+
+
 print('========================================');
+
 print('📊 PERSENTASE TERHADAP LUAS KOTA');
+
 print('========================================');
+
 print('📌 Luas total Kabupaten Jember:', luasTotalKota_val.toFixed(2), 'ha');
+
 print('📌 % Vegetasi 2024 thd luas kota:', (area_2024_val / luasTotalKota_val * 100).toFixed(2), '%');
+
 print('📌 % Vegetasi 2025 thd luas kota:', (area_2025_val / luasTotalKota_val * 100).toFixed(2), '%');
+
 print('========================================');
 
 
+
+
+
 // ================================================================
+
 // VEKTORISASI SCALE 15 TANPA FILTER (SEMUA POLIGON IKUT)
+
 // ================================================================
 
+
+
 print('========================================');
+
 print('📌 VEKTORISASI SCALE 15, TANPA FILTER');
+
 print('========================================');
+
+
 
 // 1. VEKTORISASI SCALE 30 (LANGSUNG, TANPA FILTER)
+
 var target_2024 = classified2024.selfMask().reduceToVectors({
+
   geometry: jember.geometry(),
+
   scale: 30,
+
   geometryType: 'polygon',
+
   eightConnected: false,
+
   maxPixels: 1e9,
+
   tileScale: 16
+
 });
+
+
 
 var target_2025 = classified2025.selfMask().reduceToVectors({
+
   geometry: jember.geometry(),
+
   scale: 30,
+
   geometryType: 'polygon',
+
   eightConnected: false,
+
   maxPixels: 1e9,
+
   tileScale: 16
+
 });
+
+
 
 var gainPoly = gain.selfMask().reduceToVectors({
+
   geometry: jember.geometry(),
+
   scale: 30,
+
   geometryType: 'polygon',
+
   eightConnected: false,
+
   maxPixels: 1e9,
+
   tileScale: 16
+
 });
+
+
 
 var lossPoly = loss.selfMask().reduceToVectors({
+
   geometry: jember.geometry(),
+
   scale: 30,
+
   geometryType: 'polygon',
+
   eightConnected: false,
+
   maxPixels: 1e9,
+
   tileScale: 16
+
 });
+
+
 
 // 2. CEK JUMLAH POLYGON (PASTIKAN ADA ISINYA)
+
 print('Jumlah Target 2024:', target_2024.size());
+
 print('Jumlah Target 2025:', target_2025.size());
+
 print('Jumlah Gain:', gainPoly.size());
+
 print('Jumlah Loss:', lossPoly.size());
-// ================================================================
-// CHART HASIL VEKTORISASI
+
 // ================================================================
 
+// CHART HASIL VEKTORISASI
+
+// ================================================================
+
+
+
 var vectorChart = ui.Chart.feature.byFeature(
+
   ee.FeatureCollection([
+
     ee.Feature(null,{
+
       Kategori:'Target 2024',
+
       Jumlah:target_2024.size()
+
     }),
+
     ee.Feature(null,{
+
       Kategori:'Target 2025',
+
       Jumlah:target_2025.size()
+
     }),
+
     ee.Feature(null,{
+
       Kategori:'Gain',
+
       Jumlah:gainPoly.size()
+
     }),
+
     ee.Feature(null,{
+
       Kategori:'Loss',
+
       Jumlah:lossPoly.size()
+
     })
+
   ]),
+
   'Kategori',
+
   'Jumlah'
+
 )
+
 .setChartType('ColumnChart')
+
 .setOptions({
+
   title:'Jumlah Polygon Hasil Vektorisasi',
+
   legend:{position:'none'},
+
   colors:['#F39C12'],
+
   hAxis:{title:'Kategori'},
+
   vAxis:{title:'Jumlah Polygon'}
+
 });
+
+
 
 print(vectorChart);
 
+
+
 // 3. EXPORT KE ASSET (TANPA FILTER!)
+
 Export.table.toAsset({
+
   collection: target_2024,
+
   description: 'Jember_Target_2024_Asset_NoFilter',
+
   assetId: 'projects/jember-vegetasi-analisis/assets/target_2024_asset_nofilter'
+
 });
 
+
+
 Export.table.toAsset({
+
   collection: target_2025,
+
   description: 'Jember_Target_2025_Asset_NoFilter',
+
   assetId: 'projects/jember-vegetasi-analisis/assets/target_2025_asset_nofilter'
+
 });
 
+
+
 Export.table.toAsset({
+
   collection: gainPoly,
+
   description: 'Jember_Gain_Asset_NoFilter',
+
   assetId: 'projects/jember-vegetasi-analisis/assets/gain_asset_nofilter'
+
 });
 
+
+
 Export.table.toAsset({
+
   collection: lossPoly,
+
   description: 'Jember_Loss_Asset_NoFilter',
+
   assetId: 'projects/jember-vegetasi-analisis/assets/loss_asset_nofilter'
+
 });
+
+
 
 print('✅ Export scale 30 tanpa filter selesai! Cek TASKS.');
+
 print('📌 Kalo jumlah polygon > 0, berarti sukses.');
 
+
+
 // ================================================================
+
 // 3.3 EKSPOR RASTER KLASIFIKASI (GeoTIFF) - SUDAH RINGAN
+
 // ================================================================
 
+
+
 Export.image.toDrive({
+
   image: classified2024,
+
   description: 'Jember_Klasifikasi_2024',
+
   folder: 'UAS_GEE_Export',
+
   fileNamePrefix: 'Jember_Klasifikasi_2024',
+
   region: jember.geometry(),
+
   scale: 10,
+
   maxPixels: 1e9,
+
   fileFormat: 'GeoTIFF'
+
 });
 
+
+
 Export.image.toDrive({
+
   image: classified2025,
+
   description: 'Jember_Klasifikasi_2025',
+
   folder: 'UAS_GEE_Export',
+
   fileNamePrefix: 'Jember_Klasifikasi_2025',
+
   region: jember.geometry(),
+
   scale: 10,
+
   maxPixels: 1e9,
+
   fileFormat: 'GeoTIFF'
+
 });
 
+
+
 // ================================================================
+
 // 3.4 EKSPOR FEATURES + GROUND TRUTH KE DRIVE
+
 // ================================================================
 
+
+
 Export.image.toDrive({
+
   image: features_2024_export,
+
   description: 'Jember_Features_2024_Drive',
+
   folder: 'UAS_GEE_Export',
+
   fileNamePrefix: 'Jember_Features_2024',
+
   region: jember.geometry(),
+
   scale: 20,
+
   maxPixels: 1e9,
+
   fileFormat: 'GeoTIFF'
+
 });
+
+
 
 Export.image.toDrive({
+
   image: features_2025_export,
+
   description: 'Jember_Features_2025_Drive',
+
   folder: 'UAS_GEE_Export',
+
   fileNamePrefix: 'Jember_Features_2025',
+
   region: jember.geometry(),
+
   scale: 20,
+
   maxPixels: 1e9,
+
   fileFormat: 'GeoTIFF'
+
 });
 
+
+
 Export.table.toDrive({
+
   collection: groundTruth,
+
   description: 'Jember_GroundTruth_Drive',
+
   folder: 'UAS_GEE_Export',
+
   fileNamePrefix: 'Jember_GroundTruth',
+
   fileFormat: 'SHP'
+
 });
+
+
 
 Export.table.toDrive({
+
   collection: trainingData,
+
   description: 'Jember_TrainingData_Drive',
+
   folder: 'UAS_GEE_Export',
+
   fileNamePrefix: 'Jember_TrainingData',
+
   fileFormat: 'CSV',
+
   selectors: ['class', 'year', 'B2', 'B3', 'B4', 'B8', 'B11', 'B12', 'NDVI', 'NDWI', 'NDBI', 'EVI', 'SAVI']
+
 });
 
+
+
 // ================================================================
+
 // 3.5 VISUALISASI HASIL
+
 // ================================================================
+
+
 
 Map.centerObject(jember, 10);
 
+
+
 var classPalette = ['#BDBDBD', '#00A600'];
 
+
+
 Map.addLayer(classified2024, {min: 0, max: 1, palette: classPalette}, 'Hasil Klasifikasi 2024');
+
 Map.addLayer(classified2025, {min: 0, max: 1, palette: classPalette}, 'Hasil Klasifikasi 2025');
 
+
+
 Map.addLayer(groundTruth.filter(ee.Filter.eq('class', 1)), {color: '00FF00'}, 'Ground Truth Vegetasi');
+
 Map.addLayer(groundTruth.filter(ee.Filter.eq('class', 0)), {color: 'FF0000'}, 'Ground Truth Non Vegetasi');
 
+
+
 Map.addLayer(features_2024.select(['B4','B3','B2']), {min:0, max:3000}, 'RGB 2024', false);
+
 Map.addLayer(features_2025.select(['B4','B3','B2']), {min:0, max:3000}, 'RGB 2025', false);
 
+
+
 // ================================================================
+
 // SELESAI
+
 // ================================================================
 
+
+
 print('========================================');
+
 print('✅ UAS KAPITA SELEKTA + MAHA DATA SELESAI!');
+
 print('========================================');
+
 print('📌 HASIL DI PETA:');
+
 print('  - Klasifikasi 2024 & 2025');
+
 print('  - Gain (bertambah) & Loss (berkurang)');
+
 print('  - Stable Vegetasi');
+
 print('');
+
 print('📌 HASIL DI CONSOLE:');
+
 print('  - Confusion Matrix & APRF');
+
 print('  - Luas vegetasi 2024 & 2025');
+
 print('  - Gain, Loss, Stable (ha)');
+
 print('  - Interpretasi kesalahan');
+
 print('  - Jumlah polygon Target, Gain, Loss');
+
 print('');
+
 print('📌 HASIL DI TASKS:');
+
 print('  - ASSET (NoFilter): Target 2024, 2025, Gain, Loss (download jadi GeoJSON)');
+
 print('  - DRIVE: Klasifikasi 2024 & 2025 (.tif)');
+
 print('  - DRIVE: Features 2024 & 2025 (.tif)');
+
 print('  - DRIVE: Ground Truth (.shp)');
+
 print('  - DRIVE: Training Data (.csv)');
+
 print('');
+
 print('📌 PARAMETER PENTING:');
+
 print('  - Seed split:', SEED);
+
 print('  - Jumlah trees: 100');
+
 print('  - Total ground truth:', groundTruth.size());
+
 print('  - Total training data:', trainingData.size());
+
 print('  - Scale vektorisasi: 15');
+
 print('  - Filter: TANPA FILTER (semua poligon ikut)');
+
 print('========================================');
 
 
+
+
+
 // ================================================================
+
 // 4.0 EKSPOR HASIL KE GITHUB 
+
 // ================================================================
 
+
+
 print('========================================');
+
 print('📊 EKSPOR HASIL UNTUK GITHUB');
+
 print('========================================');
 
+
+
 // ================================================================
+
 // 4.1 EKSPOR CONFUSION MATRIX (CSV) 
+
 // ================================================================
+
+
 
 var confusionMatrixFC = ee.FeatureCollection([
+
   ee.Feature(null, {
+
     'Kategori': 'True Negative (TN)',
+
     'Nilai': tn,
+
     'Keterangan': 'Model benar memprediksi Non-Target'
+
   }),
+
   ee.Feature(null, {
+
     'Kategori': 'False Positive (FP)',
+
     'Nilai': fp,
+
     'Keterangan': 'Model salah memprediksi Target'
+
   }),
+
   ee.Feature(null, {
+
     'Kategori': 'False Negative (FN)',
+
     'Nilai': fn,
+
     'Keterangan': 'Model gagal menemukan Target'
+
   }),
+
   ee.Feature(null, {
+
     'Kategori': 'True Positive (TP)',
+
     'Nilai': tp,
+
     'Keterangan': 'Model benar memprediksi Target'
+
   })
+
 ]);
 
+
+
 Export.table.toDrive({
+
   collection: confusionMatrixFC,
+
   description: 'Jember_ConfusionMatrix',
+
   folder: 'UAS_GEE_Export',
+
   fileNamePrefix: 'Jember_ConfusionMatrix',
+
   fileFormat: 'CSV'
+
 });
+
+
 
 print('✅ Confusion Matrix CSV siap diexport');
 
+
+
 // ================================================================
+
 // 4.2 EKSPOR METRIK APRF + KAPPA (CSV)
+
 // ================================================================
+
+
 
 var metricsFC = ee.FeatureCollection([
+
   ee.Feature(null, {
+
     'Metric': 'Accuracy',
+
     'Value': accuracy,
+
     'Interpretasi': 'Ketepatan total klasifikasi'
+
   }),
+
   ee.Feature(null, {
+
     'Metric': 'Precision',
+
     'Value': precision,
+
     'Interpretasi': 'Ketepatan prediksi kelas Target'
+
   }),
+
   ee.Feature(null, {
+
     'Metric': 'Recall',
+
     'Value': recall,
+
     'Interpretasi': 'Kemampuan menemukan kelas Target'
+
   }),
+
   ee.Feature(null, {
+
     'Metric': 'F1-Score',
+
     'Value': f1Score,
+
     'Interpretasi': 'Harmonisasi Precision & Recall'
+
   }),
+
   ee.Feature(null, {
+
     'Metric': 'Kappa',
+
     'Value': kappa,
+
     'Interpretasi': kappaInterpretation
+
   })
+
 ]);
 
+
+
 Export.table.toDrive({
+
   collection: metricsFC,
+
   description: 'Jember_Metrics_APRF_Kappa',
+
   folder: 'UAS_GEE_Export',
+
   fileNamePrefix: 'Jember_Metrics_APRF_Kappa',
+
   fileFormat: 'CSV'
+
 });
+
+
 
 print('✅ Metrics APRF + Kappa CSV siap diexport');
 
+
+
 // ================================================================
+
 // 4.3 EKSPOR RINGKASAN LUAS & PERUBAHAN (CSV) 
+
 // ================================================================
+
+
 
 var areaSummaryFC = ee.FeatureCollection([
+
   ee.Feature(null, {
+
     'Kategori': 'Vegetasi 2024',
+
     'Luas_ha': area_2024_val
+
   }),
+
   ee.Feature(null, {
+
     'Kategori': 'Vegetasi 2025',
+
     'Luas_ha': area_2025_val
+
   }),
+
   ee.Feature(null, {
+
     'Kategori': 'Gain (Bertambah)',
+
     'Luas_ha': area_gain_val
+
   }),
+
   ee.Feature(null, {
+
     'Kategori': 'Loss (Berkurang)',
+
     'Luas_ha': area_loss_val
+
   }),
+
   ee.Feature(null, {
+
     'Kategori': 'Stable Vegetasi',
+
     'Luas_ha': area_stable_veg_val
+
   }),
+
   ee.Feature(null, {
+
     'Kategori': 'Perubahan Bersih',
+
     'Luas_ha': (area_2025_val - area_2024_val)
+
   }),
+
   ee.Feature(null, {
+
     'Kategori': 'Persentase Perubahan',
+
     'Luas_ha': persentase
+
   })
+
 ]);
 
+
+
 Export.table.toDrive({
+
   collection: areaSummaryFC,
+
   description: 'Jember_Area_Change_Summary',
+
   folder: 'UAS_GEE_Export',
+
   fileNamePrefix: 'Jember_Area_Change_Summary',
+
   fileFormat: 'CSV'
+
 });
+
+
 
 print('✅ Area Change Summary CSV siap diexport');
 
+
+
 // ================================================================
+
 // 4.4 EKSPOR METADATA (CSV) - PAKAI NILAI YANG SUDAH ADA
+
 // ================================================================
+
+
 
 // Ambil nilai dengan .getInfo() DULU sebelum masuk ke FeatureCollection
+
 var groundTruthSize = groundTruth.size().getInfo();
+
 var trainingSize = training.size().getInfo();
+
 var testingSize = testing.size().getInfo();
 
+
+
 var metadataFC = ee.FeatureCollection([
+
   ee.Feature(null, {
+
     'Parameter': 'Metode Klasifikasi',
+
     'Nilai': 'Random Forest (smileRandomForest)'
+
   }),
+
   ee.Feature(null, {
+
     'Parameter': 'Jumlah Trees',
+
     'Nilai': '100'
+
   }),
+
   ee.Feature(null, {
+
     'Parameter': 'Seed Split',
+
     'Nilai': String(SEED)
+
   }),
+
   ee.Feature(null, {
+
     'Parameter': 'Total Ground Truth',
+
     'Nilai': String(groundTruthSize)
+
   }),
+
   ee.Feature(null, {
+
     'Parameter': 'Total Training',
+
     'Nilai': String(trainingSize)
+
   }),
+
   ee.Feature(null, {
+
     'Parameter': 'Total Testing',
+
     'Nilai': String(testingSize)
+
   }),
+
   ee.Feature(null, {
+
     'Parameter': 'Scale Vektorisasi',
+
     'Nilai': '30 meter'
+
   }),
+
   ee.Feature(null, {
+
     'Parameter': 'Filter Vektorisasi',
+
     'Nilai': 'Tanpa Filter (semua poligon ikut)'
+
   }),
+
   ee.Feature(null, {
+
     'Parameter': 'Lokasi Studi',
+
     'Nilai': 'Kabupaten Jember'
+
   }),
+
   ee.Feature(null, {
+
     'Parameter': 'Periode',
+
     'Nilai': '2024-2025'
+
   })
+
 ]);
 
+
+
 Export.table.toDrive({
+
   collection: metadataFC,
+
   description: 'Jember_Metadata',
+
   folder: 'UAS_GEE_Export',
+
   fileNamePrefix: 'Jember_Metadata',
+
   fileFormat: 'CSV'
+
 });
+
+
 
 print('✅ Metadata CSV siap diexport');
 
-// ================================================================
-// 4.5 CEK NILAI METADATA DI CONSOLE
+
+
 // ================================================================
 
+// 4.5 CEK NILAI METADATA DI CONSOLE
+
+// ================================================================
+
+
+
 print('========================================');
+
 print('📊 METADATA MODEL:');
+
 print('========================================');
+
 print('Metode Klasifikasi     : Random Forest (smileRandomForest)');
+
 print('Jumlah Trees           : 100');
+
 print('Seed Split             :', SEED);
+
 print('Total Ground Truth     :', groundTruthSize);
+
 print('Total Training         :', trainingSize);
+
 print('Total Testing          :', testingSize);
+
 print('Scale Vektorisasi      : 30 meter');
+
 print('Filter Vektorisasi     : Tanpa Filter (semua poligon ikut)');
+
 print('Lokasi Studi           : Kabupaten Jember');
+
 print('Periode                : 2024-2025');
+
 print('========================================')
