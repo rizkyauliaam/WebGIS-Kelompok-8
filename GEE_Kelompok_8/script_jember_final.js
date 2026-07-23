@@ -331,34 +331,18 @@ function maskClouds(image) {
   return image.updateMask(mask);
 }
 
-// =======================
-// Sentinel-2 Tahun 2024
-// =======================
-var s2Collection2024 = s2
+var s2_2024 = s2
   .filterBounds(jember)
   .filterDate('2024-01-01', '2024-12-31')
-  .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20));
-
-print('Jumlah Scene 2024:', s2Collection2024.size());
-print('Daftar Scene 2024:', s2Collection2024);
-
-var s2_2024 = s2Collection2024
+  .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20))
   .map(maskClouds)
   .median()
   .clip(jember);
 
-// =======================
-// Sentinel-2 Tahun 2025
-// =======================
-var s2Collection2025 = s2
+var s2_2025 = s2
   .filterBounds(jember)
   .filterDate('2025-01-01', '2025-12-31')
-  .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20));
-
-print('Jumlah Scene 2025:', s2Collection2025.size());
-print('Daftar Scene 2025:', s2Collection2025);
-
-var s2_2025 = s2Collection2025
+  .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20))
   .map(maskClouds)
   .median()
   .clip(jember);
