@@ -58,6 +58,19 @@ Alur: Sentinel-2 → Cloud Masking (QA60) → Median Composite → Feature Extra
 
 ---
 
+## Data Sentinel-2
+
+Data citra yang digunakan berasal dari koleksi **COPERNICUS/S2_SR_HARMONIZED** di Google Earth Engine.
+
+| Tahun | Jumlah Scene | Periode |
+|-------|-------------:|---------|
+| 2024 | 68 scene | 1 Januari – 31 Desember 2024 |
+| 2025 | 55 scene | 1 Januari – 31 Desember 2025 |
+
+Seluruh scene difilter dengan **CLOUDY_PIXEL_PERCENTAGE < 20%**, kemudian dilakukan **cloud masking** menggunakan band QA60 dan digabungkan menggunakan metode **median composite** sehingga menghasilkan satu citra representatif untuk masing-masing tahun.
+
+---
+
 ## Konfigurasi Model
 
 | Parameter | Nilai |
