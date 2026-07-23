@@ -331,18 +331,34 @@ function maskClouds(image) {
   return image.updateMask(mask);
 }
 
-var s2_2024 = s2
+// =======================
+// Sentinel-2 Tahun 2024
+// =======================
+var s2Collection2024 = s2
   .filterBounds(jember)
   .filterDate('2024-01-01', '2024-12-31')
-  .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20))
+  .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20));
+
+print('Jumlah Scene 2024:', s2Collection2024.size());
+print('Daftar Scene 2024:', s2Collection2024);
+
+var s2_2024 = s2Collection2024
   .map(maskClouds)
   .median()
   .clip(jember);
 
-var s2_2025 = s2
+// =======================
+// Sentinel-2 Tahun 2025
+// =======================
+var s2Collection2025 = s2
   .filterBounds(jember)
   .filterDate('2025-01-01', '2025-12-31')
-  .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20))
+  .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20));
+
+print('Jumlah Scene 2025:', s2Collection2025.size());
+print('Daftar Scene 2025:', s2Collection2025);
+
+var s2_2025 = s2Collection2025
   .map(maskClouds)
   .median()
   .clip(jember);
@@ -774,6 +790,22 @@ Map.addLayer(loss, {palette: ['ff0000']}, 'Loss (Berkurang)');
 Map.addLayer(stable_veg, {palette: ['0000ff']}, 'Stable Vegetasi');
 
 // ================================================================
+// 2.7B CHANGE MAP 4 KATEGORI (GABUNGAN)
+// ================================================================
+
+var changeMap = ee.Image(0)
+  .where(stable_non, 0)   // Tetap non-vegetasi (0->0)
+  .where(gain, 1)         // Gain (0->1)
+  .where(loss, 2)         // Loss (1->0)
+  .where(stable_veg, 3)   // Tetap vegetasi (1->1)
+  .clip(jember);
+
+var changePalette = ['d9d9d9', '4daf4a', 'e41a1c', '1a9641'];
+// 0=abu-abu (tetap non-veg) | 1=hijau muda (gain) | 2=merah (loss) | 3=hijau tua (tetap veg)
+
+Map.addLayer(changeMap, {min: 0, max: 3, palette: changePalette}, 'Change Map 4 Kategori');
+
+// ================================================================
 // 2.8 HITUNG LUAS (dalam hektar)
 // ================================================================
 
@@ -838,6 +870,18 @@ print('📌 Perubahan bersih        :', (area_2025_val - area_2024_val).toFixed(
 var persentase = ((area_2025_val - area_2024_val) / area_2024_val * 100);
 print('📌 Persentase perubahan    :', persentase.toFixed(2), '%');
 print('========================================');
+
+var luasTotalKota = jember.geometry().area().divide(10000);
+var luasTotalKota_val = luasTotalKota.getInfo();
+
+print('========================================');
+print('📊 PERSENTASE TERHADAP LUAS KOTA');
+print('========================================');
+print('📌 Luas total Kabupaten Jember:', luasTotalKota_val.toFixed(2), 'ha');
+print('📌 % Vegetasi 2024 thd luas kota:', (area_2024_val / luasTotalKota_val * 100).toFixed(2), '%');
+print('📌 % Vegetasi 2025 thd luas kota:', (area_2025_val / luasTotalKota_val * 100).toFixed(2), '%');
+print('========================================');
+
 
 // ================================================================
 // VEKTORISASI SCALE 15 TANPA FILTER (SEMUA POLIGON IKUT)
@@ -1287,4 +1331,4 @@ print('Scale Vektorisasi      : 30 meter');
 print('Filter Vektorisasi     : Tanpa Filter (semua poligon ikut)');
 print('Lokasi Studi           : Kabupaten Jember');
 print('Periode                : 2024-2025');
-print('========================================');
+print('========================================')
